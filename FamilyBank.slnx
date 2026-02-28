@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/FamilyBank.Api/FamilyBank.Api.csproj" />
+    <Project Path="src/FamilyBank.Application/FamilyBank.Application.csproj" />
+    <Project Path="src/FamilyBank.Domain/FamilyBank.Domain.csproj" />
+    <Project Path="src/FamilyBank.Infrastructure/FamilyBank.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/FamilyBank.Tests/FamilyBank.Tests.csproj" />
+  </Folder>
+</Solution>
