@@ -17,22 +17,14 @@
       "label": "test",
       "command": "dotnet",
       "type": "process",
-      "args": [
-        "test",
-        "${workspaceFolder}/FamilyBank.slnx"
-      ],
+      "args": ["test", "${workspaceFolder}/FamilyBank.slnx"],
       "problemMatcher": "$msCompile"
     },
     {
       "label": "watch",
       "command": "dotnet",
       "type": "process",
-      "args": [
-        "watch",
-        "run",
-        "--project",
-        "${workspaceFolder}/src/FamilyBank.Api/FamilyBank.Api.csproj"
-      ],
+      "args": ["watch", "run", "--project", "${workspaceFolder}/src/FamilyBank.Api/FamilyBank.Api.csproj"],
       "problemMatcher": "$msCompile"
     }
   ]

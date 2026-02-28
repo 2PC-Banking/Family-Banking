@@ -43,6 +43,7 @@ FamilyBank/
 ## 🚀 Quick Start
 
 ### Prerequisites
+
 - .NET 10 SDK
 - Node.js 20+
 - Docker & Docker Compose
@@ -51,17 +52,20 @@ FamilyBank/
 ### Development
 
 1. **Start Database**
+
 ```bash
 docker-compose -f docker-compose.dev.yml up -d
 ```
 
 2. **Run API**
+
 ```bash
 cd src/FamilyBank.Api
 dotnet run
 ```
 
 3. **Run Frontend**
+
 ```bash
 cd src/family-bank-web
 npm install
@@ -69,6 +73,7 @@ npm run dev
 ```
 
 ### Full Stack (Docker)
+
 ```bash
 docker-compose up --build
 ```
