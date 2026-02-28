@@ -28,7 +28,11 @@ public static class DependencyInjection
         services.AddScoped<IOtpRepository, OtpRepository>();
 
         // Services
+        services.AddSingleton<ITokenService, TokenService>(); // Singleton để lưu refresh tokens
         services.AddScoped<ISmsService, MockSmsService>();
+        services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IAccountService, AccountService>();
+        services.AddScoped<ITransferService, TransferService>();
 
         return services;
     }
