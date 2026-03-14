@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { SystemStatus } from '@/components/dashboard/SystemStatus';
 import { TransactionHeader } from '@/components/transactions/TransactionHeader';
 import { TransactionTableNew } from '@/components/transactions/TransactionTableNew';
@@ -21,6 +21,10 @@ interface Transaction {
 export default function TransactionsPage() {
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [displayedTransactions, setDisplayedTransactions] = useState<Transaction[]>(allTransactions);
+
+  const handleFilteredDataChange = useCallback((data: Transaction[]) => {
+    setDisplayedTransactions(data);
+  }, []);
 
   const handleExport = () => {
     const csv = [
@@ -60,7 +64,7 @@ export default function TransactionsPage() {
         <TransactionTableNew
           transactions={allTransactions}
           onRowClick={setSelectedTransaction}
-          onFilteredDataChange={setDisplayedTransactions}
+          onFilteredDataChange={handleFilteredDataChange}
         />
       </div>
 

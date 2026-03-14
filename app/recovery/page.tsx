@@ -1,15 +1,93 @@
+"use client";
+
+import { useState } from 'react';
 import { SystemStatus } from '@/components/dashboard/SystemStatus';
+import { RecoveryAlertBanner } from '@/components/recovery/RecoveryAlertBanner';
+import { RecoverySummaryCards } from '@/components/recovery/RecoverySummaryCards';
+import { UncertainTransactionsTable } from '@/components/recovery/UncertainTransactionsTable';
+import { RecoveryDetailModal } from '@/components/recovery/RecoveryDetailModal';
+import { RecoveryStrategy } from '@/components/recovery/RecoveryStrategy';
+import { uncertainTransactions, recoveryTransactionDetails } from '@/lib/mockData';
+
+interface UncertainTransaction {
+  id: string;
+  timestamp: string;
+  amount: string;
+  fromBank: string;
+  toBank: string;
+  reason: string;
+  reasonType: 'crash' | 'timeout' | 'network';
+  duration: string;
+  phase: string;
+  coordinator: string;
+  participants: string[];
+}
 
 export default function RecoveryPage() {
+  const [selectedTransaction, setSelectedTransaction] = useState<UncertainTransaction | null>(null);
+
+  const totalAmount = uncertainTransactions.reduce((sum, tx) => {
+    const amount = parseFloat(tx.amount.replace(/[$,]/g, ''));
+    return sum + amount;
+  }, 0);
+
+  const handleCommit = (id: string) => {
+    alert(`Commit initiated for transaction ${id}`);
+    setSelectedTransaction(null);
+  };
+
+  const handleRollback = (id: string) => {
+    alert(`Rollback initiated for transaction ${id}`);
+    setSelectedTransaction(null);
+  };
+
+  const handleAutoRecoverAll = () => {
+    alert('Auto-recovery process started for all uncertain transactions');
+  };
+
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-[calc(100vh-80px)] bg-slate-100">
+      {/* Header */}
       <SystemStatus />
-      <div className="flex-1 overflow-auto px-8 py-6">
-        <div className="bg-white rounded-lg border border-slate-200 p-8 text-center">
-          <h2 className="text-2xl font-bold text-slate-900">Recovery</h2>
-          <p className="text-slate-500 mt-2">Coming soon...</p>
-        </div>
+
+      {/* Title Section */}
+      <div className="px-8 py-6 bg-white border-b border-slate-200">
+        <h1 className="text-3xl font-bold text-slate-900">Recovery</h1>
+        <p className="text-slate-600 mt-1">Manage and resolve uncertain transactions from failed operations</p>
       </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-auto">
+        {/* Alert Banner */}
+        <RecoveryAlertBanner count={uncertainTransactions.length} />
+
+        {/* Summary Cards */}
+        <RecoverySummaryCards
+          uncertainCount={uncertainTransactions.length}
+          totalAmount={`$${totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          oldestDuration="8m 33s"
+        />
+
+        {/* Uncertain Transactions Table */}
+        <UncertainTransactionsTable
+          transactions={uncertainTransactions}
+          onRowClick={setSelectedTransaction}
+          onCommit={handleCommit}
+          onRollback={handleRollback}
+          onAutoRecoverAll={handleAutoRecoverAll}
+        />
+
+        {/* Recovery Strategy */}
+        <RecoveryStrategy />
+      </div>
+
+      {/* Recovery Detail Modal */}
+      <RecoveryDetailModal
+        isOpen={selectedTransaction !== null}
+        transaction={selectedTransaction}
+        details={recoveryTransactionDetails}
+        onClose={() => setSelectedTransaction(null)}
+      />
     </div>
   );
 }

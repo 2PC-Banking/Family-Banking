@@ -335,6 +335,103 @@ export const twoPhaseCommitTransactions = [
   },
 ];
 
+// Recovery transactions (uncertain transactions)
+export const uncertainTransactions = [
+  {
+    id: 'TXN-005',
+    timestamp: '2024-02-06 14:05:33',
+    amount: '$156,300.00',
+    fromBank: 'Bank A',
+    toBank: 'Bank B',
+    reason: 'Coordinator crash during phase 2',
+    reasonType: 'crash' as const,
+    duration: '2m 45s',
+    phase: 'COMMIT' as const,
+    coordinator: 'Bank A',
+    participants: ['Bank A', 'Bank B'],
+    status: 'uncertain',
+  },
+  {
+    id: 'TXN-009',
+    timestamp: '2024-02-06 13:32:18',
+    amount: '$98,750.50',
+    fromBank: 'Bank C',
+    toBank: 'Bank D',
+    reason: 'Participant timeout during prepare',
+    reasonType: 'timeout' as const,
+    duration: '5m 12s',
+    phase: 'PREPARE' as const,
+    coordinator: 'Bank C',
+    participants: ['Bank C', 'Bank D'],
+    status: 'uncertain',
+  },
+  {
+    id: 'TXN-012',
+    timestamp: '2024-02-06 12:58:42',
+    amount: '$234,500.00',
+    fromBank: 'Bank B',
+    toBank: 'Bank A',
+    reason: 'Network failure during commit phase',
+    reasonType: 'network' as const,
+    duration: '8m 33s',
+    phase: 'COMMIT' as const,
+    coordinator: 'Bank B',
+    participants: ['Bank B', 'Bank A'],
+    status: 'uncertain',
+  },
+];
+
+export const recoveryTransactionDetails = {
+  'TXN-005': {
+    id: 'TXN-005',
+    coordinator: 'Bank A',
+    participants: [
+      { bank: 'Bank A', status: 'Unknown', lastUpdate: '14:05:33' },
+      { bank: 'Bank B', status: 'Unknown', lastUpdate: '14:05:30' },
+    ],
+    phase: 'COMMIT',
+    reason: 'Coordinator crash during phase 2',
+    logs: [
+      { time: '14:05:33', message: 'Coordinator (Bank A) initiated COMMIT phase' },
+      { time: '14:05:35', message: 'Bank B received COMMIT request' },
+      { time: '14:05:40', message: 'Coordinator became unresponsive' },
+      { time: '14:05:42', message: 'Bank B waiting for confirmation' },
+    ],
+  },
+  'TXN-009': {
+    id: 'TXN-009',
+    coordinator: 'Bank C',
+    participants: [
+      { bank: 'Bank C', status: 'Prepared', lastUpdate: '13:32:25' },
+      { bank: 'Bank D', status: 'Timeout', lastUpdate: '13:32:18' },
+    ],
+    phase: 'PREPARE',
+    reason: 'Participant timeout during prepare',
+    logs: [
+      { time: '13:32:18', message: 'Coordinator (Bank C) sent PREPARE request' },
+      { time: '13:32:20', message: 'Bank D received PREPARE request' },
+      { time: '13:32:40', message: 'Bank D did not respond to PREPARE request' },
+      { time: '13:32:55', message: 'PREPARE phase timeout detected' },
+    ],
+  },
+  'TXN-012': {
+    id: 'TXN-012',
+    coordinator: 'Bank B',
+    participants: [
+      { bank: 'Bank B', status: 'Committed', lastUpdate: '12:58:52' },
+      { bank: 'Bank A', status: 'Unknown', lastUpdate: '12:58:42' },
+    ],
+    phase: 'COMMIT',
+    reason: 'Network failure during commit phase',
+    logs: [
+      { time: '12:58:42', message: 'Coordinator (Bank B) initiated COMMIT phase' },
+      { time: '12:58:45', message: 'Bank A received COMMIT request' },
+      { time: '12:58:50', message: 'Bank B confirmed COMMIT execution' },
+      { time: '12:58:55', message: 'Network connection to Bank A lost' },
+    ],
+  },
+};
+
 export const twoPhaseCommitDetails = [
   {
     id: '2PC-001',
