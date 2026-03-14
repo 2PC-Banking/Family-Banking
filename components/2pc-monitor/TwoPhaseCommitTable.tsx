@@ -3,46 +3,58 @@
 import { useState, useEffect } from 'react';
 import { Search, ArrowUpDown } from 'lucide-react';
 
-interface Transaction {
+interface TwoPhaseCommitTransaction {
   id: string;
   fromBank: string;
   toBank: string;
   amount: string;
   timestamp: string;
-  type: string;
-  status: 'Completed' | 'Processing' | 'Failed';
-  error?: string;
+  phase: 'PREPARE' | 'COMMIT' | 'ABORT';
+  status: 'Prepared' | 'Committed' | 'Pending' | 'Aborted';
+  participants: number;
+  coordinatorBank: string;
+  reason?: string;
 }
 
-interface TransactionTableNewProps {
-  transactions: Transaction[];
-  onRowClick: (transaction: Transaction) => void;
-  onFilteredDataChange?: (data: Transaction[]) => void;
+interface TwoPhaseCommitTableProps {
+  transactions: TwoPhaseCommitTransaction[];
+  onRowClick: (transaction: TwoPhaseCommitTransaction) => void;
+  onFilteredDataChange?: (data: TwoPhaseCommitTransaction[]) => void;
 }
 
-type SortField = 'id' | 'timestamp' | 'amount' | 'status' | 'type';
+type SortField = 'id' | 'timestamp' | 'amount' | 'status' | 'phase';
 type SortOrder = 'asc' | 'desc';
 
 const statusBadge = (status: string) => {
   const styles = {
-    'Completed': 'bg-green-100 text-green-700',
-    'Processing': 'bg-blue-100 text-blue-700',
-    'Failed': 'bg-red-100 text-red-700',
+    'Prepared': 'bg-yellow-100 text-yellow-700',
+    'Committed': 'bg-green-100 text-green-700',
+    'Pending': 'bg-blue-100 text-blue-700',
+    'Aborted': 'bg-red-100 text-red-700',
   };
   return styles[status as keyof typeof styles] || '';
+};
+
+const phaseBadge = (phase: string) => {
+  const styles = {
+    'PREPARE': 'bg-purple-100 text-purple-700',
+    'COMMIT': 'bg-blue-100 text-blue-700',
+    'ABORT': 'bg-red-100 text-red-700',
+  };
+  return styles[phase as keyof typeof styles] || '';
 };
 
 const parseAmount = (amount: string): number => {
   return parseFloat(amount.replace(/[$,]/g, ''));
 };
 
-export function TransactionTableNew({ transactions = [], onRowClick, onFilteredDataChange }: TransactionTableNewProps) {
+export function TwoPhaseCommitTable({ transactions = [], onRowClick, onFilteredDataChange }: TwoPhaseCommitTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [sortField, setSortField] = useState<SortField>('timestamp');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
-  const [statusFilter, setStatusFilter] = useState<'All' | 'Completed' | 'Processing' | 'Failed'>('All');
-  const [typeFilter, setTypeFilter] = useState<string>('All');
+  const [statusFilter, setStatusFilter] = useState<'All' | 'Prepared' | 'Committed' | 'Pending' | 'Aborted'>('All');
+  const [phaseFilter, setPhaseFilter] = useState<'All' | 'PREPARE' | 'COMMIT' | 'ABORT'>('All');
   
   const itemsPerPage = 8;
 
@@ -55,9 +67,9 @@ export function TransactionTableNew({ transactions = [], onRowClick, onFilteredD
       tx.toBank.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter === 'All' || tx.status === statusFilter;
-    const matchesType = typeFilter === 'All' || tx.type === typeFilter;
+    const matchesPhase = phaseFilter === 'All' || tx.phase === phaseFilter;
     
-    return matchesSearch && matchesStatus && matchesType;
+    return matchesSearch && matchesStatus && matchesPhase;
   });
 
   // Sort transactions
@@ -77,8 +89,8 @@ export function TransactionTableNew({ transactions = [], onRowClick, onFilteredD
       case 'status':
         compareValue = a.status.localeCompare(b.status);
         break;
-      case 'type':
-        compareValue = a.type.localeCompare(b.type);
+      case 'phase':
+        compareValue = a.phase.localeCompare(b.phase);
         break;
     }
     
@@ -90,7 +102,7 @@ export function TransactionTableNew({ transactions = [], onRowClick, onFilteredD
     if (onFilteredDataChange) {
       onFilteredDataChange(sortedTransactions);
     }
-  }, [searchTerm, statusFilter, typeFilter, sortField, sortOrder]);
+  }, [searchTerm, statusFilter, phaseFilter, sortField, sortOrder]);
 
   const totalPages = Math.ceil(sortedTransactions.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -118,18 +130,15 @@ export function TransactionTableNew({ transactions = [], onRowClick, onFilteredD
     setCurrentPage(1);
   };
 
-  const handleStatusChange = (status: 'All' | 'Completed' | 'Processing' | 'Failed') => {
+  const handleStatusChange = (status: 'All' | 'Prepared' | 'Committed' | 'Pending' | 'Aborted') => {
     setStatusFilter(status);
     setCurrentPage(1);
   };
 
-  const handleTypeChange = (type: string) => {
-    setTypeFilter(type);
+  const handlePhaseChange = (phase: 'All' | 'PREPARE' | 'COMMIT' | 'ABORT') => {
+    setPhaseFilter(phase);
     setCurrentPage(1);
   };
-
-  // Get unique transaction types
-  const uniqueTypes = Array.from(new Set((transactions || []).map(tx => tx.type)));
 
   const SortIcon = ({ field }: { field: SortField }) => {
     if (sortField !== field) return <ArrowUpDown size={16} className="text-slate-400" />;
@@ -162,7 +171,7 @@ export function TransactionTableNew({ transactions = [], onRowClick, onFilteredD
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-slate-600">Status:</span>
             <div className="flex gap-2">
-              {(['All', 'Completed', 'Processing', 'Failed'] as const).map((status) => (
+              {(['All', 'Prepared', 'Committed', 'Pending', 'Aborted'] as const).map((status) => (
                 <button
                   key={status}
                   onClick={() => handleStatusChange(status)}
@@ -179,18 +188,16 @@ export function TransactionTableNew({ transactions = [], onRowClick, onFilteredD
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-slate-600">Type:</span>
+            <span className="text-sm font-medium text-slate-600">Phase:</span>
             <select
-              value={typeFilter}
-              onChange={(e) => handleTypeChange(e.target.value)}
+              value={phaseFilter}
+              onChange={(e) => handlePhaseChange(e.target.value as any)}
               className="px-3 py-1 rounded-lg text-sm font-medium bg-slate-100 text-slate-700 border border-slate-300 hover:bg-slate-200 transition-colors"
             >
-              <option value="All">All Types</option>
-              {uniqueTypes.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
+              <option value="All">All Phases</option>
+              <option value="PREPARE">PREPARE</option>
+              <option value="COMMIT">COMMIT</option>
+              <option value="ABORT">ABORT</option>
             </select>
           </div>
         </div>
@@ -228,15 +235,15 @@ export function TransactionTableNew({ transactions = [], onRowClick, onFilteredD
                   <SortIcon field="amount" />
                 </div>
               </th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">From Bank</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">To Bank</th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Coordinator</th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Participants</th>
               <th 
-                onClick={() => handleSort('type')}
+                onClick={() => handleSort('phase')}
                 className="px-6 py-4 text-left text-sm font-semibold text-slate-900 cursor-pointer hover:bg-slate-100 transition-colors"
               >
                 <div className="flex items-center gap-2">
-                  Type
-                  <SortIcon field="type" />
+                  Phase
+                  <SortIcon field="phase" />
                 </div>
               </th>
               <th 
@@ -261,9 +268,13 @@ export function TransactionTableNew({ transactions = [], onRowClick, onFilteredD
                   <td className="px-6 py-4 text-sm font-medium text-slate-900">{tx.id}</td>
                   <td className="px-6 py-4 text-sm text-slate-600">{tx.timestamp}</td>
                   <td className="px-6 py-4 text-sm font-medium text-slate-900">{tx.amount}</td>
-                  <td className="px-6 py-4 text-sm text-slate-600">{tx.fromBank}</td>
-                  <td className="px-6 py-4 text-sm text-slate-600">{tx.toBank}</td>
-                  <td className="px-6 py-4 text-sm text-slate-600">{tx.type}</td>
+                  <td className="px-6 py-4 text-sm text-slate-600">{tx.coordinatorBank}</td>
+                  <td className="px-6 py-4 text-sm text-slate-600">{tx.participants}</td>
+                  <td className="px-6 py-4 text-sm">
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${phaseBadge(tx.phase)}`}>
+                      {tx.phase}
+                    </span>
+                  </td>
                   <td className="px-6 py-4 text-sm">
                     <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusBadge(tx.status)}`}>
                       {tx.status}

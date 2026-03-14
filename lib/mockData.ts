@@ -158,3 +158,199 @@ export const getCurrentTime = (): string => {
   const year = now.getFullYear();
   return `${hours}:${minutes}:${seconds} ${date}/${month}/${year}`;
 };
+
+// 2PC Monitor data
+export const twoPhaseCommitTransactions = [
+  { 
+    id: '2PC-001', 
+    fromBank: 'Bank A', 
+    toBank: 'Bank B', 
+    amount: '$125,450.00', 
+    timestamp: '2024-02-06 14:32:21', 
+    phase: 'PREPARE', 
+    status: 'Prepared' as const, 
+    participants: 2, 
+    coordinatorBank: 'Bank A',
+    phaseStartTime: '14:32:21',
+    phaseEndTime: '14:32:35',
+    participantStatuses: [
+      { bank: 'Bank A', status: 'Ready', timestamp: '14:32:35' },
+      { bank: 'Bank B', status: 'Ready', timestamp: '14:32:36' },
+    ]
+  },
+  { 
+    id: '2PC-002', 
+    fromBank: 'Bank B', 
+    toBank: 'Bank C', 
+    amount: '$89,200.50', 
+    timestamp: '2024-02-06 14:25:15', 
+    phase: 'COMMIT', 
+    status: 'Committed' as const, 
+    participants: 3, 
+    coordinatorBank: 'Bank B',
+    phaseStartTime: '14:25:15',
+    phaseEndTime: '14:25:22',
+    participantStatuses: [
+      { bank: 'Bank B', status: 'Ready', timestamp: '14:25:18' },
+      { bank: 'Bank C', status: 'Ready', timestamp: '14:25:19' },
+    ]
+  },
+  { 
+    id: '2PC-003', 
+    fromBank: 'Bank C', 
+    toBank: 'Bank D', 
+    amount: '$234,100.00', 
+    timestamp: '2024-02-06 14:18:42', 
+    phase: 'PREPARE', 
+    status: 'Pending' as const, 
+    participants: 2, 
+    coordinatorBank: 'Bank C',
+    phaseStartTime: '14:18:42',
+    phaseEndTime: '',
+    participantStatuses: [
+      { bank: 'Bank C', status: 'Waiting', timestamp: '14:18:42' },
+      { bank: 'Bank D', status: 'Waiting', timestamp: '' },
+    ]
+  },
+  { 
+    id: '2PC-004', 
+    fromBank: 'Bank D', 
+    toBank: 'Bank A', 
+    amount: '$45,600.25', 
+    timestamp: '2024-02-06 14:12:08', 
+    phase: 'COMMIT', 
+    status: 'Committed' as const, 
+    participants: 4, 
+    coordinatorBank: 'Bank D',
+    phaseStartTime: '14:12:08',
+    phaseEndTime: '14:12:18',
+    participantStatuses: [
+      { bank: 'Bank D', status: 'Ready', timestamp: '14:12:12' },
+      { bank: 'Bank A', status: 'Ready', timestamp: '14:12:13' },
+    ]
+  },
+  { 
+    id: '2PC-005', 
+    fromBank: 'Bank A', 
+    toBank: 'Bank C', 
+    amount: '$156,300.00', 
+    timestamp: '2024-02-06 14:05:33', 
+    phase: 'ABORT', 
+    status: 'Aborted' as const, 
+    participants: 2, 
+    coordinatorBank: 'Bank A', 
+    reason: 'Validation failed',
+    phaseStartTime: '14:05:33',
+    phaseEndTime: '14:05:42',
+    participantStatuses: [
+      { bank: 'Bank A', status: 'Failed', timestamp: '14:05:38' },
+      { bank: 'Bank C', status: 'Failed', timestamp: '14:05:39' },
+    ]
+  },
+  { 
+    id: '2PC-006', 
+    fromBank: 'Bank B', 
+    toBank: 'Bank D', 
+    amount: '$78,900.75', 
+    timestamp: '2024-02-06 13:58:19', 
+    phase: 'COMMIT', 
+    status: 'Committed' as const, 
+    participants: 3, 
+    coordinatorBank: 'Bank B',
+    phaseStartTime: '13:58:19',
+    phaseEndTime: '13:58:26',
+    participantStatuses: [
+      { bank: 'Bank B', status: 'Ready', timestamp: '13:58:22' },
+      { bank: 'Bank D', status: 'Ready', timestamp: '13:58:23' },
+    ]
+  },
+  { 
+    id: '2PC-007', 
+    fromBank: 'Bank C', 
+    toBank: 'Bank A', 
+    amount: '$312,450.00', 
+    timestamp: '2024-02-06 13:51:44', 
+    phase: 'PREPARE', 
+    status: 'Prepared' as const, 
+    participants: 2, 
+    coordinatorBank: 'Bank C',
+    phaseStartTime: '13:51:44',
+    phaseEndTime: '13:51:52',
+    participantStatuses: [
+      { bank: 'Bank C', status: 'Ready', timestamp: '13:51:48' },
+      { bank: 'Bank A', status: 'Ready', timestamp: '13:51:49' },
+    ]
+  },
+  { 
+    id: '2PC-008', 
+    fromBank: 'Bank D', 
+    toBank: 'Bank B', 
+    amount: '$67,200.50', 
+    timestamp: '2024-02-06 13:45:12', 
+    phase: 'COMMIT', 
+    status: 'Committed' as const, 
+    participants: 3, 
+    coordinatorBank: 'Bank D',
+    phaseStartTime: '13:45:12',
+    phaseEndTime: '13:45:19',
+    participantStatuses: [
+      { bank: 'Bank D', status: 'Ready', timestamp: '13:45:15' },
+      { bank: 'Bank B', status: 'Ready', timestamp: '13:45:16' },
+    ]
+  },
+  { 
+    id: '2PC-009', 
+    fromBank: 'Bank A', 
+    toBank: 'Bank D', 
+    amount: '$93,750.00', 
+    timestamp: '2024-02-06 13:38:55', 
+    phase: 'PREPARE', 
+    status: 'Pending' as const, 
+    participants: 4, 
+    coordinatorBank: 'Bank A',
+    phaseStartTime: '13:38:55',
+    phaseEndTime: '',
+    participantStatuses: [
+      { bank: 'Bank A', status: 'Waiting', timestamp: '13:38:55' },
+      { bank: 'Bank D', status: 'Waiting', timestamp: '' },
+    ]
+  },
+  { 
+    id: '2PC-010', 
+    fromBank: 'Bank B', 
+    toBank: 'Bank A', 
+    amount: '$142,500.00', 
+    timestamp: '2024-02-06 13:32:10', 
+    phase: 'ABORT', 
+    status: 'Aborted' as const, 
+    participants: 2, 
+    coordinatorBank: 'Bank B', 
+    reason: 'Timeout on participant',
+    phaseStartTime: '13:32:10',
+    phaseEndTime: '13:32:25',
+    participantStatuses: [
+      { bank: 'Bank B', status: 'Failed', timestamp: '13:32:15' },
+      { bank: 'Bank A', status: 'Failed', timestamp: '13:32:16' },
+    ]
+  },
+];
+
+export const twoPhaseCommitDetails = [
+  {
+    id: '2PC-001',
+    fromBank: 'Bank A',
+    toBank: 'Bank B',
+    amount: '$125,450.00',
+    timestamp: '2024-02-06 14:32:21',
+    phase: 'PREPARE',
+    status: 'Prepared' as const,
+    participants: 2,
+    coordinatorBank: 'Bank A',
+    startTime: '2024-02-06 14:32:21',
+    prepareTime: '2024-02-06 14:32:35',
+    votes: [
+      { bank: 'Bank A', vote: 'YES', timestamp: '2024-02-06 14:32:35' },
+      { bank: 'Bank B', vote: 'YES', timestamp: '2024-02-06 14:32:36' },
+    ],
+  },
+];
