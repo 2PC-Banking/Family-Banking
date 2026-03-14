@@ -34,6 +34,8 @@ const StatCard = ({ title, value, subtitle, icon, color, onClick }: StatCard) =>
     red: 'text-red-300',
   };
 
+  const formattedValue = value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
   return (
     <div
       onClick={onClick}
@@ -42,7 +44,7 @@ const StatCard = ({ title, value, subtitle, icon, color, onClick }: StatCard) =>
       <div className="flex items-start justify-between">
         <div>
           <p className="text-slate-600 text-sm font-medium">{title}</p>
-          <p className="text-3xl font-bold text-slate-900 mt-2">{value.toLocaleString()}</p>
+          <p className="text-3xl font-bold text-slate-900 mt-2">{formattedValue}</p>
           <p className="text-xs text-slate-500 mt-1">{subtitle}</p>
         </div>
         <div className={`${iconColorClasses[color]} text-4xl`}>

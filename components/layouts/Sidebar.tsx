@@ -26,7 +26,9 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-64 bg-slate-900 text-white flex flex-col h-screen fixed left-0 top-0">
+    // Give sidebar a very high z-index and ensure it receives pointer events so
+    // it stays clickable above modals/overlays which may use z-50.
+    <aside className="w-64 bg-slate-900 text-white flex flex-col h-screen fixed left-0 top-0 z-[9999] pointer-events-auto">
       {/* Logo Section */}
       <div className="p-6 border-b border-slate-800">
         <div className="flex items-center gap-3 mb-4">
