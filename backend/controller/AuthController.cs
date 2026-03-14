@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using backend.models; // Đổi Models thành models
 using backend.Data;   // Đảm bảo có dòng này nếu cần gọi DbContext
 
-namespace backend.controller // Theo tên thư mục của bạn
+namespace backend.controller 
 {
     [ApiController]
     [Route("api/auth")] // Đường dẫn sẽ là api/auth/login
@@ -19,10 +19,10 @@ namespace backend.controller // Theo tên thư mục của bạn
         public IActionResult Login([FromBody] LoginRequest request)
         {
             var user = _context.Customers
-                .FirstOrDefault(u => u.username == request.username && u.pass == request.pass);
+                .FirstOrDefault(u => u.phone == request.phone && u.pass == request.pass);
 
             if (user == null)
-                return Unauthorized(new { message = "Sai tài khoản hoặc mật khẩu" });
+                return Unauthorized(new { message = "Sai số điện thoại hoặc mật khẩu" });
 
             return Ok(new { 
                 customerId = user.customerid, 
@@ -34,7 +34,7 @@ namespace backend.controller // Theo tên thư mục của bạn
 
     public class LoginRequest 
     {
-        public string username { get; set; } = String.Empty;
+        public string phone { get; set; } = String.Empty;
         public string pass { get; set; } = String.Empty;
     }
 }

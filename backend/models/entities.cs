@@ -4,7 +4,7 @@ namespace backend.models // Lưu ý: models viết thường theo tên thư mụ
     {
         public string customerid { get; set; } = "";
         public string name { get; set; } = "";
-        public string username { get; set; } = "";
+        public string phone { get; set; } = "";
         public string pass { get; set; } = "";
     }
 
@@ -17,5 +17,15 @@ namespace backend.models // Lưu ý: models viết thường theo tên thư mụ
         public string type { get; set; } = "";
         public string? relatedaccount { get; set; } = "";
         public decimal postbalance { get; set; }
+    }
+
+    public class Account
+    {
+        public string accountnumber { get; set; } = "";
+        public string customerid { get; set; } = "";
+        public decimal balance { get; set; }
+        public DateTime dateopened { get; set; }
+        public decimal interestrate { get; set; }
+        public decimal overdraftlimit { get; set; }
     }
 }

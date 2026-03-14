@@ -1,21 +1,22 @@
 using Microsoft.AspNetCore.Mvc;
-using backend.models; // Đổi Models thành models
-using backend.Data;   // Đảm bảo có dòng này nếu cần gọi DbContext
+using backend.models; 
+using backend.Data;   
+using System.Linq;
 
 namespace backend.controller
 {
     [ApiController]
-    [Route("api/transactions")] // Đường dẫn sẽ là api/transactions/history/...
-    public class TransactionController : ControllerBase
+    [Route("api/history")] // Đổi Route cho ngắn gọn và đúng ngữ nghĩa
+    public class HistoryController : ControllerBase
     {
         private readonly BankDbContext _context;
 
-        public TransactionController(BankDbContext context)
+        public HistoryController(BankDbContext context)
         {
             _context = context;
         }
 
-        [HttpGet("history/{accountnumber}")]
+        [HttpGet("{accountnumber}")]
         public IActionResult GetHistory(string accountnumber)
         {
             var history = _context.Transactions
