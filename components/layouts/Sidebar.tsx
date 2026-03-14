@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   Send,
@@ -24,11 +24,14 @@ const navigationItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleNavigation = (href: string) => {
+    router.push(href);
+  };
 
   return (
-    // Give sidebar a very high z-index and ensure it receives pointer events so
-    // it stays clickable above modals/overlays which may use z-50.
-    <aside className="w-64 bg-slate-900 text-white flex flex-col h-screen fixed left-0 top-0 z-[9999] pointer-events-auto">
+    <aside className="w-64 bg-slate-900 text-white flex flex-col h-screen fixed left-0 top-0">
       {/* Logo Section */}
       <div className="p-6 border-b border-slate-800">
         <div className="flex items-center gap-3 mb-4">
@@ -61,11 +64,11 @@ export function Sidebar() {
           const Icon = item.icon;
           const isActive = pathname === item.href;
           return (
-            <Link
+            <button
               key={item.href}
-              href={item.href}
+              onClick={() => handleNavigation(item.href)}
               className={cn(
-                'flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-sm font-medium',
+                'w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-sm font-medium text-left',
                 isActive
                   ? 'bg-blue-500 text-white'
                   : 'text-slate-300 hover:bg-slate-800'
@@ -73,7 +76,7 @@ export function Sidebar() {
             >
               <Icon size={20} />
               <span>{item.label}</span>
-            </Link>
+            </button>
           );
         })}
       </nav>
