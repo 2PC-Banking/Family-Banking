@@ -1,6 +1,20 @@
-import { redirect } from 'next/navigation';
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/auth-context';
 
 export default function RootPage() {
-  // Redirect root to dashboard page so the app opens at Dashboard by default
-  redirect('/dashboard');
+  const router = useRouter();
+  const { isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.replace('/dashboard');
+    } else {
+      router.replace('/login');
+    }
+  }, [isAuthenticated, router]);
+
+  return null;
 }
