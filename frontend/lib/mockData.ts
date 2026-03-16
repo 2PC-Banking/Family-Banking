@@ -432,6 +432,32 @@ export const recoveryTransactionDetails = {
   },
 };
 
+// System Logs data
+export const systemLogs = [
+  { id: 'LOG-001', timestamp: '2024-02-06 14:32:21', level: 'INFO', source: 'Transaction Manager', message: 'Transaction TXN-001 initiated for amount $125,450.00 from Bank A to Bank C', transactionId: 'TXN-001' },
+  { id: 'LOG-002', timestamp: '2024-02-06 14:32:22', level: 'INFO', source: 'Coordinator', message: 'Phase 1 prepare request sent to all participants', transactionId: 'TXN-001' },
+  { id: 'LOG-003', timestamp: '2024-02-06 14:32:23', level: 'SUCCESS', source: 'Bank A', message: 'Participant voted YES - can commit transaction', transactionId: 'TXN-001' },
+  { id: 'LOG-004', timestamp: '2024-02-06 14:32:24', level: 'SUCCESS', source: 'Bank C', message: 'Participant voted YES - can commit transaction', transactionId: 'TXN-001' },
+  { id: 'LOG-005', timestamp: '2024-02-06 14:32:25', level: 'INFO', source: 'Coordinator', message: 'Phase 2 commit request sent to all participants', transactionId: 'TXN-001' },
+  { id: 'LOG-006', timestamp: '2024-02-06 14:32:26', level: 'SUCCESS', source: 'Bank A', message: 'Transaction committed successfully', transactionId: 'TXN-001' },
+  { id: 'LOG-007', timestamp: '2024-02-06 14:32:27', level: 'SUCCESS', source: 'Bank C', message: 'Transaction committed successfully', transactionId: 'TXN-001' },
+  { id: 'LOG-008', timestamp: '2024-02-06 14:25:15', level: 'INFO', source: 'Transaction Manager', message: 'Transaction TXN-002 initiated for amount $89,200.50 from Bank B to Bank D', transactionId: 'TXN-002' },
+  { id: 'LOG-009', timestamp: '2024-02-06 14:25:16', level: 'WARNING', source: 'Coordinator', message: 'Delayed response from participant Bank D', transactionId: 'TXN-002' },
+  { id: 'LOG-010', timestamp: '2024-02-06 14:25:20', level: 'SUCCESS', source: 'Bank B', message: 'Transaction completed with retry', transactionId: 'TXN-002' },
+  { id: 'LOG-011', timestamp: '2024-02-06 14:18:42', level: 'INFO', source: 'Transaction Manager', message: 'Transaction TXN-003 initiated for amount $234,100.00 from Bank C to Bank A', transactionId: 'TXN-003' },
+  { id: 'LOG-012', timestamp: '2024-02-06 14:18:45', level: 'INFO', source: 'Coordinator', message: 'Phase 1 prepare request sent to all participants', transactionId: 'TXN-003' },
+  { id: 'LOG-013', timestamp: '2024-02-06 14:18:50', level: 'WARNING', source: 'Bank A', message: 'Validation warning: amount exceeds typical threshold', transactionId: 'TXN-003' },
+  { id: 'LOG-014', timestamp: '2024-02-06 14:18:55', level: 'ERROR', source: 'Bank A', message: 'Validation failed: insufficient liquidity', transactionId: 'TXN-003' },
+  { id: 'LOG-015', timestamp: '2024-02-06 14:19:00', level: 'INFO', source: 'Coordinator', message: 'Phase 2 abort request sent to all participants', transactionId: 'TXN-003' },
+  { id: 'LOG-016', timestamp: '2024-02-06 14:05:33', level: 'INFO', source: 'Transaction Manager', message: 'Transaction TXN-004 initiated', transactionId: 'TXN-004' },
+  { id: 'LOG-017', timestamp: '2024-02-06 14:05:38', level: 'ERROR', source: 'Coordinator', message: 'Coordinator crashed unexpectedly - recovery initiated', transactionId: 'TXN-004' },
+  { id: 'LOG-018', timestamp: '2024-02-06 14:05:42', level: 'WARNING', source: 'Recovery Manager', message: 'Transaction in uncertain state - recovery in progress', transactionId: 'TXN-004' },
+  { id: 'LOG-019', timestamp: '2024-02-06 13:58:19', level: 'SUCCESS', source: 'Transaction Manager', message: 'Transaction TXN-005 completed successfully', transactionId: 'TXN-005' },
+  { id: 'LOG-020', timestamp: '2024-02-06 13:45:12', level: 'INFO', source: 'Bank B', message: 'System health check passed', transactionId: null },
+];
+
+export const logLevels = ['All Levels', 'Info', 'Success', 'Warning', 'Error'];
+
 export const twoPhaseCommitDetails = [
   {
     id: '2PC-001',
