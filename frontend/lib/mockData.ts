@@ -23,14 +23,14 @@ export const successRateTrendData = [
 export const linkedBanksData = [
   {
     id: 'bank-a',
-    name: 'Bank A',
+    name: 'Premium Checking',
     transactions: 245,
     successRate: 98.5,
     status: 'online',
   },
   {
     id: 'bank-b',
-    name: 'Bank B',
+    name: 'Savings Plus',
     transactions: 189,
     successRate: 97.2,
     status: 'online',

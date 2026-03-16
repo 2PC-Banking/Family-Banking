@@ -8,8 +8,8 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'Bank Admin Management System',
-  description: 'Bank Admin Management System Dashboard',
+  title: 'FAMILY BANK - Management System',
+  description: 'FAMILY BANK Management System Dashboard',
   generator: 'v0.app',
   icons: {
     icon: [
