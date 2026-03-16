@@ -34,21 +34,18 @@ export function Sidebar() {
     <aside className="w-64 bg-slate-900 text-white flex flex-col h-screen fixed left-0 top-0">
       {/* Logo Section */}
       <div className="p-6 border-b border-slate-800">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center font-bold text-sm">
-            BA
-          </div>
-          <div>
-            <h1 className="font-semibold text-sm">Bank Admin</h1>
-            <p className="text-xs text-slate-400">Management System</p>
-          </div>
+        <div className="mb-4">
+          <h1 className="font-semibold text-lg text-white">
+            FAMILY BANK
+          </h1>
+          <p className="text-xs text-slate-400">Management System</p>
         </div>
       </div>
 
       {/* Current User Section */}
       <div className="p-6 border-b border-slate-800">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-blue-400 rounded-full flex items-center justify-center font-semibold text-sm">
+          <div className="w-10 h-10 bg-slate-700 rounded-full flex items-center justify-center font-semibold text-sm">
             SA
           </div>
           <div>
@@ -70,7 +67,7 @@ export function Sidebar() {
               className={cn(
                 'w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-sm font-medium text-left',
                 isActive
-                  ? 'bg-blue-500 text-white'
+                  ? 'bg-slate-700 text-white'
                   : 'text-slate-300 hover:bg-slate-800'
               )}
             >
