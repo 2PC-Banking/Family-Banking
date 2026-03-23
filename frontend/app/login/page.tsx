@@ -23,9 +23,9 @@ export default function LoginPage() {
     try {
       const success = await login(username, password);
       if (success) {
-        router.push('/verify');
+        router.push('/');
       } else {
-        setError('Invalid username or password');
+        setError('Sai số điện thoại hoặc mật khẩu');
       }
     } catch (err) {
       setError('An error occurred. Please try again.');

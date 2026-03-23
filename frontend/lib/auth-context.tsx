@@ -28,27 +28,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async (username: string, password: string) => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    if (username === 'familybank' && password === '123456') {
-      setNeedsOtp(true);
-      setAdminName('Family Bank Admin');
-      return true;
+    const base = process.env.NEXT_PUBLIC_API_URL ?? '';
+    const url = `${base}/api/auth/login`;
+
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: username, pass: password }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+
+        setAdminName(data.name ?? '');
+        setIsAuthenticated(true);   // ✅ login luôn
+        setNeedsOtp(false);         // ❌ bỏ OTP
+
+        localStorage.setItem(
+          'familybank_auth',
+          JSON.stringify({
+            name: data.name,
+            customerId: data.customerId,
+          })
+        );
+
+        return true;
+      }
+
+      return false;
+    } catch (err) {
+      console.error(err);
+      return false;
     }
-    return false;
   };
 
   const verifyOtp = async (code: string) => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    if (code === '123456') {
-      setIsAuthenticated(true);
-      setNeedsOtp(false);
-      localStorage.setItem('familybank_auth', JSON.stringify({ name: adminName }));
-      return true;
-    }
     return false;
   };
 
