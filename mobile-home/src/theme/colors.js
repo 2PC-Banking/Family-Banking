@@ -1,0 +1,57 @@
+// Design tokens mirrored from Tailwind config in the original HTML
+export const colors = {
+  primary: '#003063',
+  primaryContainer: '#00468c',
+  primaryFixed: '#d6e3ff',
+  primaryFixedDim: '#a9c7ff',
+  onPrimary: '#ffffff',
+  onPrimaryFixed: '#001b3d',
+  onPrimaryFixedVariant: '#00468c',
+  onPrimaryContainer: '#8cb6ff',
+
+  secondary: '#50606d',
+  secondaryContainer: '#d0e2f1',
+  secondaryFixed: '#d3e5f4',
+  secondaryFixedDim: '#b7c9d8',
+  onSecondary: '#ffffff',
+  onSecondaryFixed: '#0c1d28',
+  onSecondaryFixedVariant: '#384955',
+  onSecondaryContainer: '#546572',
+
+  tertiary: '#552000',
+  tertiaryContainer: '#793100',
+  tertiaryFixed: '#ffdbcb',
+  tertiaryFixedDim: '#ffb691',
+  onTertiary: '#ffffff',
+  onTertiaryFixed: '#341100',
+  onTertiaryFixedVariant: '#793100',
+  onTertiaryContainer: '#ff9d69',
+
+  surface: '#f8f9fa',
+  surfaceBright: '#f8f9fa',
+  surfaceVariant: '#e1e3e4',
+  surfaceContainer: '#edeeef',
+  surfaceContainerLow: '#f3f4f5',
+  surfaceContainerHigh: '#e7e8e9',
+  surfaceContainerHighest: '#e1e3e4',
+  surfaceContainerLowest: '#ffffff',
+  surfaceDim: '#d9dadb',
+  surfaceTint: '#2a5ea5',
+  onSurface: '#191c1d',
+  onSurfaceVariant: '#424751',
+
+  background: '#f8f9fa',
+  onBackground: '#191c1d',
+
+  outline: '#737782',
+  outlineVariant: '#c2c6d2',
+
+  inverseSurface: '#2e3132',
+  inverseOnSurface: '#f0f1f2',
+  inversePrimary: '#a9c7ff',
+
+  error: '#ba1a1a',
+  errorContainer: '#ffdad6',
+  onError: '#ffffff',
+  onErrorContainer: '#93000a',
+};
