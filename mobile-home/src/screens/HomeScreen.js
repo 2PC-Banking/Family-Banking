@@ -39,7 +39,7 @@ export default function HomeScreen({ onLogout, onNavigate }) {
           showsVerticalScrollIndicator={false}
         >
           {/* Balance card */}
-          <BalanceCard fontFamily={fontFamily} />
+          <BalanceCard fontFamily={fontFamily} onNavigate={onNavigate} />
 
           {/* Quick actions */}
           <QuickActionsCarousel fontFamily={fontFamily} onActionPress={(route) => route && onNavigate?.(route)} />

@@ -19,10 +19,13 @@ import LoginScreen from "./src/screens/LoginScreen";
 import HomeScreen from "./src/screens/HomeScreen";
 import TransferScreen from "./src/screens/TransferScreen";
 import OTPScreen from "./src/screens/OTPScreen";
+import SuccessScreen from "./src/screens/SuccessScreen";
+import HistoryScreen from "./src/screens/HistoryScreen";
+import TransactionDetailScreen from "./src/screens/TransactionDetailScreen";
 import { colors } from "./src/theme/colors";
 
 export default function App() {
-  const [screen, setScreen] = useState("home"); // 'login' | 'home' | 'transfer' | 'otp'
+  const [screen, setScreen] = useState("tx_detail"); // 'login' | 'home' | 'transfer' | 'otp' | 'success' | 'history' | 'tx_detail'
 
   const [fontsLoaded] = useFonts({
     Manrope_400Regular,
@@ -62,7 +65,25 @@ export default function App() {
       {screen === "otp" && (
         <OTPScreen
           onBack={() => setScreen("transfer")}
-          onConfirm={() => setScreen("home")}
+          onConfirm={() => setScreen("success")}
+        />
+      )}
+      {screen === "success" && (
+        <SuccessScreen
+          onNewTransaction={() => setScreen("transfer")}
+          onHome={() => setScreen("home")}
+        />
+      )}
+      {screen === "history" && (
+        <HistoryScreen
+          onBack={() => setScreen("home")}
+          onNavigate={(s) => setScreen(s)}
+        />
+      )}
+      {screen === "tx_detail" && (
+        <TransactionDetailScreen
+          onBack={() => setScreen("history")}
+          onNewTransaction={() => setScreen("transfer")}
         />
       )}
     </>
