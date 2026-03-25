@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "Heritage Digital",
+    "slug": "heritage-digital",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#003063"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.sovereigntrust.heritage"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#003063"
+      },
+      "package": "com.sovereigntrust.heritage"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}

@@ -8,6 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(); // Đã cài package ở Bước 1 nên hết lỗi ở đây
+builder.WebHost.UseUrls("http://*:5288"); // Cấu hình để chạy trên cổng 5288, bind tất cả IP
 
 builder.Services.AddDbContext<BankDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -31,5 +32,28 @@ if (app.Environment.IsDevelopment())
 app.UseCors("AllowAll");
 app.UseAuthorization();
 app.MapControllers();
+// --- Đoạn code kiểm tra kết nối Database ---
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<BankDbContext>();
+        // Hàm CanConnect() sẽ trả về true nếu chuỗi kết nối đúng và DB đang chạy
+        if (context.Database.CanConnect())
+        {
+            Console.WriteLine("✅ KẾT NỐI POSTGRESQL THÀNH CÔNG!");
+        }
+        else
+        {
+            Console.WriteLine("❌ KHÔNG THỂ KẾT NỐI POSTGRESQL.");
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"❌ LỖI KẾT NỐI DB: {ex.Message}");
+    }
+}
+// -------------------------------------------
 
 app.Run();
