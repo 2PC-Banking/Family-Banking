@@ -1,10 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
+  useWindowDimensions,
+  ScrollView,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -22,6 +24,33 @@ const fontFamily = {
 
 export default function OTPScreen({ onBack, onConfirm }) {
   const [otp, setOtp] = useState(["5", "8", "", "", "", ""]);
+  const { width } = useWindowDimensions();
+  const isSmallScreen = width < 360;
+
+  const [timer, setTimer] = useState(119);
+  const [canResend, setCanResend] = useState(false);
+
+  useEffect(() => {
+    if (timer > 0) {
+      const interval = setInterval(() => {
+        setTimer((prev) => prev - 1);
+      }, 1000);
+      return () => clearInterval(interval);
+    } else {
+      setCanResend(true);
+    }
+  }, [timer]);
+
+  const handleResend = () => {
+    setTimer(119);
+    setCanResend(false);
+  };
+
+  const formatTime = (seconds) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `0${m}:${s < 10 ? "0" + s : s}`;
+  };
 
   const handleKeyPress = (key) => {
     if (key === "backspace") {
@@ -71,7 +100,11 @@ export default function OTPScreen({ onBack, onConfirm }) {
         </View>
         <View style={styles.headerDivider} />
 
-        <View style={styles.mainContent}>
+        <ScrollView
+          style={{ flex: 1, width: "100%" }}
+          contentContainerStyle={styles.mainContent}
+          showsVerticalScrollIndicator={false}
+        >
           {/* Message Section */}
           <View style={styles.messageSection}>
             <View style={styles.iconCircle}>
@@ -145,14 +178,15 @@ export default function OTPScreen({ onBack, onConfirm }) {
                   { fontFamily: fontFamily.headlineSemiBold },
                 ]}
               >
-                01:59
+                {formatTime(timer)}
               </Text>
             </View>
-            <TouchableOpacity disabled>
+            <TouchableOpacity disabled={!canResend} onPress={handleResend}>
               <Text
                 style={[
                   styles.resendText,
                   { fontFamily: fontFamily.bodyMedium },
+                  canResend && { opacity: 1, color: colors.primary },
                 ]}
               >
                 Gửi lại mã
@@ -197,7 +231,7 @@ export default function OTPScreen({ onBack, onConfirm }) {
               </Text>
             </View>
           </View>
-        </View>
+        </ScrollView>
 
         {/* Numeric Keypad Component */}
         <View style={styles.keypadContainer}>
@@ -309,12 +343,14 @@ const styles = StyleSheet.create({
 
   // Main Auth Flow Content Wrapper
   mainContent: {
-    flex: 1,
+    flexGrow: 1,
     width: "100%",
     maxWidth: 448, // max-w-md
-    paddingHorizontal: 24, // px-6
+    paddingHorizontal: "5%", // use relative spacing for diverse screens
     paddingTop: 48, // pt-12
+    paddingBottom: 24, // pt-6 equivalent spacing
     alignItems: "center",
+    alignSelf: "center",
   },
 
   // Messages and Text Formatting
@@ -449,7 +485,7 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 448, // max-w-md
     backgroundColor: colors.surfaceContainerLow,
-    paddingTop: 5, // pt-4
+    paddingTop: 16, // pt-4
     paddingBottom: 32, // pb-8
     paddingHorizontal: 24, // px-6
     borderTopLeftRadius: 40, // rounded-t-[2.5rem]

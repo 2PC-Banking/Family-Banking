@@ -124,7 +124,7 @@ export default function TransferScreen({ onBack, onConfirm }) {
                   <Text
                     style={[
                       styles.sourceAccountNo,
-                      { fontFamily: fontFamily.headlineBold, FontSize: 15 },
+                      { fontFamily: fontFamily.headlineBold, fontSize: 16 },
                     ]}
                   >
                     0912 8888 9999
@@ -144,7 +144,7 @@ export default function TransferScreen({ onBack, onConfirm }) {
                       styles.sourceBalance,
                       {
                         fontFamily: fontFamily.headlineExtraBold,
-                        fontsize: 10,
+                        fontSize: 11,
                       },
                     ]}
                   >
@@ -419,7 +419,7 @@ export default function TransferScreen({ onBack, onConfirm }) {
           </View>
 
           {/* Secure Transact Footer Badge */}
-          <View style={styles.securityBadge}>
+          {/* <View style={styles.securityBadge}>
             <MaterialIcons
               name="lock"
               size={12}
@@ -430,7 +430,7 @@ export default function TransferScreen({ onBack, onConfirm }) {
             >
               Giao dịch bảo mật Sovereign AES-256
             </Text>
-          </View>
+          </View> */}
         </ScrollView>
       </View>
     </SafeAreaView>
