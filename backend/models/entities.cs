@@ -3,7 +3,9 @@ namespace backend.models // Lưu ý: models viết thường theo tên thư mụ
     public class Customer
     {
         public string customerid { get; set; } = "";
+        public string branchid { get; set; } = "";  // thêm cột này
         public string name { get; set; } = "";
+        public string address { get; set; } = "";   // thêm cột này
         public string phone { get; set; } = "";
         public string pass { get; set; } = "";
     }

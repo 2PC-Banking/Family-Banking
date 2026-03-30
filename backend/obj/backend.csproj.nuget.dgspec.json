@@ -1,23 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "D:\\sgu\\2PC\\backend\\backend.csproj": {}
+    "D:\\STUDY\\DoAnDisData\\backend\\backend.csproj": {}
   },
   "projects": {
-    "D:\\sgu\\2PC\\backend\\backend.csproj": {
+    "D:\\STUDY\\DoAnDisData\\backend\\backend.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\sgu\\2PC\\backend\\backend.csproj",
+        "projectUniqueName": "D:\\STUDY\\DoAnDisData\\backend\\backend.csproj",
         "projectName": "backend",
-        "projectPath": "D:\\sgu\\2PC\\backend\\backend.csproj",
-        "packagesPath": "C:\\Users\\nhanh\\.nuget\\packages\\",
-        "outputPath": "D:\\sgu\\2PC\\backend\\obj\\",
+        "projectPath": "D:\\STUDY\\DoAnDisData\\backend\\backend.csproj",
+        "packagesPath": "C:\\Users\\ADMIN\\.nuget\\packages\\",
+        "outputPath": "D:\\STUDY\\DoAnDisData\\backend\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\nhanh\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\ADMIN\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
