@@ -4,7 +4,6 @@
     "slug": "heritage-digital",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
       "backgroundColor": "#003063"
@@ -19,8 +18,6 @@
       },
       "package": "com.sovereigntrust.heritage"
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    }
+    "web": {}
   }
 }
