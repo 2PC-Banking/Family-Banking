@@ -28,3 +28,7 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+[Bb]in/
+[Oo]bj/
+*.dll
+*.exe
