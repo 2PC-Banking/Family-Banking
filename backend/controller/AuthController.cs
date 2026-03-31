@@ -1,11 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
-using backend.models; // Đổi Models thành models
-using backend.Data;   // Đảm bảo có dòng này nếu cần gọi DbContext
+using backend.models; 
+using backend.Data;   
+using System.Linq;
 
 namespace backend.controller 
 {
     [ApiController]
-    [Route("api/auth")] // Đường dẫn sẽ là api/auth/login
+    [Route("api/auth")] 
     public class AuthController : ControllerBase
     {
         private readonly BankDbContext _context;
@@ -18,15 +19,24 @@ namespace backend.controller
         [HttpPost("login")]
         public IActionResult Login([FromBody] LoginRequest request)
         {
+            // 1. Tìm User trong bảng Customers dựa vào số điện thoại và mật khẩu
             var user = _context.Customers
                 .FirstOrDefault(u => u.phone == request.phone && u.pass == request.pass);
 
+            // Nếu không tìm thấy ai khớp -> báo lỗi
             if (user == null)
+            {
                 return Unauthorized(new { message = "Sai số điện thoại hoặc mật khẩu" });
+            }
 
+            // 2. Nếu đăng nhập đúng, tìm Account của User này để lấy số tài khoản
+            var account = _context.Accounts.FirstOrDefault(a => a.customerid == user.customerid);
+
+            // 3. Trả về thông tin cho React Native
             return Ok(new { 
                 customerId = user.customerid, 
                 name = user.name,
+                accountnumber = account?.accountnumber ?? "", // Trả về thêm Account Number
                 message = "Đăng nhập thành công" 
             });
         }
@@ -34,7 +44,7 @@ namespace backend.controller
 
     public class LoginRequest 
     {
-        public string phone { get; set; } = String.Empty;
-        public string pass { get; set; } = String.Empty;
+        public string phone { get; set; } = string.Empty;
+        public string pass { get; set; } = string.Empty;
     }
 }

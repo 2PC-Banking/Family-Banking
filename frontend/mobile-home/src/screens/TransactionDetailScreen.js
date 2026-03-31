@@ -21,7 +21,22 @@ const fontFamily = {
   bodyBold: 'Inter_700Bold',
 };
 
-export default function TransactionDetailScreen({ onBack, onNewTransaction }) {
+// Bổ sung thêm prop "transaction" để nhận dữ liệu truyền từ HistoryScreen sang
+export default function TransactionDetailScreen({ onBack, onNewTransaction, transaction }) {
+  
+  // Xử lý dữ liệu an toàn (Fallback nếu chưa có data)
+  const amountStr = transaction?.amount || "- 0đ";
+  const isReceive = amountStr.includes('+'); // Kiểm tra xem là tiền vào hay ra dựa vào dấu
+  const relatedName = transaction?.title || "Không xác định";
+  const relatedAccount = transaction?.id ? "Tài khoản liên kết" : "1029384756"; // Tạm thời nếu DB chưa lưu tài khoản chi tiết
+  const timeStr = transaction?.time || "---";
+  const noteStr = transaction?.type || "Chuyển khoản";
+  const txId = transaction?.txId || "TXN-UNKNOWN";
+  const statusStr = transaction?.status || "Giao dịch thành công";
+
+  // Màu sắc thay đổi linh hoạt: Tiền vào màu xanh, Tiền ra màu đen/đỏ
+  const amountColor = isReceive ? '#059669' : colors.onSurface;
+
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.root}>
@@ -55,13 +70,14 @@ export default function TransactionDetailScreen({ onBack, onNewTransaction }) {
             </View>
             
             <View style={styles.amountContainer}>
-              <Text style={[styles.amountText, { fontFamily: fontFamily.headlineExtraBold }]}>
-                -1,250,000 VND
+              {/* Hiển thị số tiền thực tế */}
+              <Text style={[styles.amountText, { fontFamily: fontFamily.headlineExtraBold, color: amountColor }]}>
+                {amountStr}
               </Text>
               <View style={styles.statusPill}>
                 <View style={styles.statusDot} />
                 <Text style={[styles.statusText, { fontFamily: fontFamily.bodySemiBold }]}>
-                  Giao dịch thành công
+                  {statusStr}
                 </Text>
               </View>
             </View>
@@ -73,16 +89,18 @@ export default function TransactionDetailScreen({ onBack, onNewTransaction }) {
               
               {/* Row 1 */}
               <View style={styles.detailRow}>
-                <Text style={[styles.detailLabel, { fontFamily: fontFamily.bodyMedium }]}>Tên người nhận</Text>
-                <Text style={[styles.detailValue, { fontFamily: fontFamily.bodySemiBold }]}>NGUYEN VAN A</Text>
+                <Text style={[styles.detailLabel, { fontFamily: fontFamily.bodyMedium }]}>
+                  {isReceive ? "Người gửi" : "Tên người nhận"}
+                </Text>
+                <Text style={[styles.detailValue, { fontFamily: fontFamily.bodySemiBold }]}>{relatedName}</Text>
               </View>
 
               {/* Row 2 */}
               <View style={styles.detailRow}>
-                <Text style={[styles.detailLabel, { fontFamily: fontFamily.bodyMedium }]}>Ngân hàng thụ hưởng</Text>
+                <Text style={[styles.detailLabel, { fontFamily: fontFamily.bodyMedium }]}>Ngân hàng</Text>
                 <View style={styles.detailValueCol}>
-                  <Text style={[styles.detailValue, { fontFamily: fontFamily.bodySemiBold }]}>Vietcombank</Text>
-                  <Text style={[styles.detailSubtext, { fontFamily: fontFamily.bodyRegular }]}>VCB - Ngân hàng TMCP Ngoại Thương</Text>
+                  <Text style={[styles.detailValue, { fontFamily: fontFamily.bodySemiBold }]}>Nội bộ</Text>
+                  <Text style={[styles.detailSubtext, { fontFamily: fontFamily.bodyRegular }]}>Heritage Digital Bank</Text>
                 </View>
               </View>
 
@@ -90,7 +108,7 @@ export default function TransactionDetailScreen({ onBack, onNewTransaction }) {
               <View style={styles.detailRow}>
                 <Text style={[styles.detailLabel, { fontFamily: fontFamily.bodyMedium }]}>Số tài khoản</Text>
                 <View style={styles.detailValueRow}>
-                  <Text style={[styles.detailValue, { fontFamily: fontFamily.bodySemiBold }]}>1029384756</Text>
+                  <Text style={[styles.detailValue, { fontFamily: fontFamily.bodySemiBold }]}>{relatedAccount}</Text>
                   <TouchableOpacity activeOpacity={0.6}>
                     <MaterialIcons name="content-copy" size={16} color={colors.primary} />
                   </TouchableOpacity>
@@ -100,20 +118,20 @@ export default function TransactionDetailScreen({ onBack, onNewTransaction }) {
               {/* Row 4 */}
               <View style={styles.detailRow}>
                 <Text style={[styles.detailLabel, { fontFamily: fontFamily.bodyMedium }]}>Thời gian</Text>
-                <Text style={[styles.detailValue, { fontFamily: fontFamily.bodySemiBold }]}>14:35 - 24 Tháng 05, 2024</Text>
+                <Text style={[styles.detailValue, { fontFamily: fontFamily.bodySemiBold }]}>{timeStr}</Text>
               </View>
 
               {/* Row 5 */}
               <View style={styles.detailRow}>
                 <Text style={[styles.detailLabel, { fontFamily: fontFamily.bodyMedium }]}>Nội dung</Text>
-                <Text style={[styles.detailValue, { fontFamily: fontFamily.bodySemiBold }]}>NGUYEN VAN B chuyen tien</Text>
+                <Text style={[styles.detailValue, { fontFamily: fontFamily.bodySemiBold }]}>{noteStr}</Text>
               </View>
 
               {/* Row 6 */}
               <View style={styles.detailRow}>
                 <Text style={[styles.detailLabel, { fontFamily: fontFamily.bodyMedium }]}>Mã giao dịch (TXN ID)</Text>
                 <Text style={[styles.detailValue, { fontFamily: fontFamily.bodySemiBold, flex: 1, textAlign: 'right' }]} numberOfLines={2}>
-                  TXN-9982-A2F0-PH2
+                  {txId}
                 </Text>
               </View>
 

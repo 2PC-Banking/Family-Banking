@@ -12,11 +12,17 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { MaterialIcons } from "@expo/vector-icons";
+
+// IMPORT ASYNC STORAGE ĐỂ LƯU DỮ LIỆU ĐĂNG NHẬP
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 import GlassCard from "../components/GlassCard";
 import PillInput from "../components/PillInput";
 import BiometricButton from "../components/BiometricButton";
 import { colors } from "../theme/colors";
-import { loginAPI } from "../services/authService";
+
+// Import API (Đảm bảo file apiService.js đã được tạo như hướng dẫn trước)
+import { loginAPI } from "../services/apiService";
 
 const { width } = Dimensions.get("window");
 
@@ -27,6 +33,7 @@ export default function LoginScreen({ onLogin }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // HÀM XỬ LÝ ĐĂNG NHẬP ĐÃ ĐƯỢC CẬP NHẬT
   const handleLogin = async () => {
     if (!phone || !pass) {
       setError("Vui lòng nhập tên đăng nhập và mật khẩu");
@@ -34,13 +41,27 @@ export default function LoginScreen({ onLogin }) {
     }
     setLoading(true);
     setError("");
+
     try {
+      // Gọi API lên C#
       const response = await loginAPI(phone, pass);
-      // Xử lý đăng nhập thành công, ví dụ lưu token hoặc navigate
+
       console.log("Đăng nhập thành công:", response);
-      onLogin(); // Navigate to Home
+
+      // LƯU THÔNG TIN VÀO BỘ NHỚ ĐIỆN THOẠI
+      // Để các màn hình Home, Transfer, History có thể lấy ra dùng
+      await AsyncStorage.setItem(
+        "userData",
+        JSON.stringify({
+          name: response.name,
+          accountnumber: response.accountnumber,
+          customerId: response.customerId,
+        }),
+      );
+
+      onLogin(); // Navigate sang màn hình Home
     } catch (err) {
-      setError(err.message || "Đăng nhập thất bại");
+      setError(err.message || "Đăng nhập thất bại. Vui lòng thử lại.");
     } finally {
       setLoading(false);
     }

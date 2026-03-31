@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -7,177 +7,191 @@ import {
   ScrollView,
   StyleSheet,
   SafeAreaView,
-} from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
-import { colors } from '../theme/colors';
+  ActivityIndicator,
+  RefreshControl,
+} from "react-native";
+import { MaterialIcons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { colors } from "../theme/colors";
+
+// Import API
+import { getHistoryAPI } from "../services/apiService";
 
 const fontFamily = {
-  headlineExtraBold: 'Manrope_800ExtraBold',
-  headlineBold: 'Manrope_700Bold',
-  headlineSemiBold: 'Manrope_600SemiBold',
-  bodyRegular: 'Inter_400Regular',
-  bodyMedium: 'Inter_500Medium',
-  bodySemiBold: 'Inter_600SemiBold',
-  bodyBold: 'Inter_700Bold',
+  headlineExtraBold: "Manrope_800ExtraBold",
+  headlineBold: "Manrope_700Bold",
+  headlineSemiBold: "Manrope_600SemiBold",
+  bodyRegular: "Inter_400Regular",
+  bodyMedium: "Inter_500Medium",
+  bodySemiBold: "Inter_600SemiBold",
+  bodyBold: "Inter_700Bold",
 };
 
-const FILTERS = ['Tất cả', 'Chuyển tiền', 'Thanh toán hóa đơn', 'Nạp tiền'];
-
-const TRANSACTIONS = [
-  {
-    group: 'Hôm nay',
-    items: [
-      {
-        id: '1',
-        title: 'NGUYEN VAN A',
-        amount: '- 1,250,000đ',
-        txId: 'TXN-9982-A2F0',
-        type: 'Chuyển tiền',
-        time: '14:35',
-        status: 'Thành công',
-        icon: 'send',
-        iconBg: colors.secondaryContainer,
-        iconColor: colors.primary,
-        amountColor: colors.onSurface,
-      },
-      {
-        id: '2',
-        title: 'Nạp tiền điện thoại',
-        amount: '- 100,000đ',
-        txId: 'TXN-8821-B4G1',
-        type: 'Dịch vụ',
-        time: '09:12',
-        status: 'Thành công',
-        icon: 'smartphone',
-        iconBg: colors.tertiaryFixed,
-        iconColor: colors.tertiary,
-        amountColor: colors.onSurface,
-      },
-    ],
-  },
-  {
-    group: 'Hôm qua',
-    items: [
-      {
-        id: '3',
-        title: 'TRAN THI B',
-        amount: '+ 5,000,000đ',
-        txId: 'TXN-7734-C9K2',
-        type: 'Nhận tiền',
-        time: '18:45',
-        status: 'Thành công',
-        icon: 'padding', // material icon Add Card equivalent visually
-        iconBg: '#ecfdf5', // emerald-50
-        iconColor: '#047857', // emerald-700
-        amountColor: '#059669', // emerald-600
-      },
-      {
-        id: '4',
-        title: 'Thanh toán tiền điện',
-        amount: '- 845,000đ',
-        txId: 'TXN-6645-D1L3',
-        type: 'Hóa đơn',
-        time: '11:20',
-        status: 'Thành công',
-        icon: 'bolt',
-        iconBg: '#f3f4f5',
-        iconColor: '#50606d',
-        amountColor: colors.onSurface,
-      },
-    ],
-  },
-  {
-    group: 'Tuần trước',
-    items: [
-      {
-        id: '5',
-        title: 'Shopee Pay',
-        amount: '- 320,000đ',
-        txId: 'TXN-5556-E8M4',
-        type: 'Mua sắm',
-        time: '20/10 14:05',
-        status: 'Thành công',
-        icon: 'shopping-bag',
-        iconBg: 'rgba(0, 70, 140, 0.05)', // primary/5
-        iconColor: colors.primary,
-        amountColor: colors.onSurface,
-      },
-      {
-        id: '6',
-        title: 'LE VAN C',
-        amount: '2,000,000đ', // Original was positive but color on-surface-variant. We'll follow layout exactly
-        txId: 'TXN-4467-F2N5',
-        type: 'Chuyển tiền',
-        time: '19/10 08:30',
-        status: 'Thất bại',
-        icon: 'warning',
-        iconBg: '#fef2f2', // red-50
-        iconColor: '#dc2626', // red-600
-        amountColor: colors.onSurfaceVariant,
-      },
-    ],
-  },
-];
+const FILTERS = ["Tất cả", "Chuyển tiền", "Thanh toán hóa đơn", "Nạp tiền"];
 
 export default function HistoryScreen({ onBack, onNavigate }) {
-  const [activeFilter, setActiveFilter] = useState('Tất cả');
+  const [activeFilter, setActiveFilter] = useState("Tất cả");
+  const [historyData, setHistoryData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchHistory = async () => {
+    try {
+      const userStr = await AsyncStorage.getItem("userData");
+      if (userStr) {
+        const { accountnumber } = JSON.parse(userStr);
+        const data = await getHistoryAPI(accountnumber);
+
+        // Format dữ liệu từ DB cho khớp với UI
+        const formattedData = formatDataForUI(data);
+        setHistoryData(formattedData);
+      }
+    } catch (error) {
+      console.log("Lỗi tải lịch sử:", error);
+      // Xử lý khi rỗng hoặc lỗi
+      setHistoryData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchHistory();
+  }, []);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchHistory();
+    setRefreshing(false);
+  }, []);
+
+  const formatDataForUI = (data) => {
+    // Map dữ liệu thành mảng các items
+    const items = data.map((tx) => {
+      const isSend = tx.amount < 0; // Số tiền âm là tiền gửi đi
+
+      // Chuyển đổi timestamp thành chuỗi thời gian dễ nhìn
+      const txDate = new Date(tx.timestamp);
+      const timeString = `${txDate.getHours().toString().padStart(2, "0")}:${txDate.getMinutes().toString().padStart(2, "0")} - ${txDate.getDate()}/${txDate.getMonth() + 1}/${txDate.getFullYear()}`;
+
+      return {
+        id: tx.transactionid,
+        title: isSend
+          ? `Chuyển đến: ${tx.relatedaccount}`
+          : `Nhận từ: ${tx.relatedaccount}`,
+        amount: `${isSend ? "" : "+"}${tx.amount.toLocaleString("vi-VN")} đ`,
+        txId: tx.transactionid,
+        type:
+          tx.type === "ChuyenTien"
+            ? "Chuyển tiền"
+            : tx.type === "NhanTien"
+              ? "Nhận tiền"
+              : tx.type,
+        time: timeString,
+        status: "Thành công",
+        icon: isSend ? "send" : "download",
+        iconBg: isSend ? colors.secondaryContainer : "#ecfdf5",
+        iconColor: isSend ? colors.primary : "#047857",
+        amountColor: isSend ? colors.onSurface : "#059669",
+      };
+    });
+
+    // Gom tất cả vào 1 group "Giao dịch gần đây"
+    if (items.length === 0) return [];
+    return [{ group: "Giao dịch gần đây", items }];
+  };
 
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.root}>
-        
         {/* TopAppBar Section */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <TouchableOpacity activeOpacity={0.7} style={styles.iconBtn} onPress={onBack}>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              style={styles.iconBtn}
+              onPress={onBack}
+            >
               <MaterialIcons name="arrow-back" size={24} color="#003063" />
             </TouchableOpacity>
-            <Text style={[styles.headerTitle, { fontFamily: fontFamily.headlineBold }]}>
+            <Text
+              style={[
+                styles.headerTitle,
+                { fontFamily: fontFamily.headlineBold },
+              ]}
+            >
               Lịch sử giao dịch
             </Text>
           </View>
           <TouchableOpacity activeOpacity={0.7} style={styles.iconBtn}>
-            <MaterialIcons name="tune" size={24} color={colors.onSurfaceVariant} />
+            <MaterialIcons
+              name="tune"
+              size={24}
+              color={colors.onSurfaceVariant}
+            />
           </TouchableOpacity>
         </View>
         <View style={styles.headerDivider} />
-
-        {/* Visual Background Enhancements Simulation. 
-            Note: React Native doesn't easily support massive blurred background circles like CSS blur-[120px] 
-            without external libraries like @react-native-community/blur or complex shaders.
-            We simulate the tint effect statically, but keep it mostly clean based on Surface color. */}
 
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.primary}
+            />
+          }
         >
           {/* Search & Quick Filters */}
           <View style={styles.filterSection}>
             <View style={styles.searchBox}>
-              <MaterialIcons name="search" size={20} color={colors.onSurfaceVariant} style={styles.searchIcon} />
+              <MaterialIcons
+                name="search"
+                size={20}
+                color={colors.onSurfaceVariant}
+                style={styles.searchIcon}
+              />
               <TextInput
-                style={[styles.searchInput, { fontFamily: fontFamily.bodySemiBold }]}
+                style={[
+                  styles.searchInput,
+                  { fontFamily: fontFamily.bodySemiBold },
+                ]}
                 placeholder="Tìm kiếm giao dịch"
                 placeholderTextColor={colors.onSurfaceVariant}
               />
             </View>
 
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
-              {FILTERS.map(f => {
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.filterRow}
+            >
+              {FILTERS.map((f) => {
                 const isActive = activeFilter === f;
                 return (
                   <TouchableOpacity
                     key={f}
                     activeOpacity={0.8}
-                    style={[styles.filterChip, isActive && styles.filterChipActive]}
+                    style={[
+                      styles.filterChip,
+                      isActive && styles.filterChipActive,
+                    ]}
                     onPress={() => setActiveFilter(f)}
                   >
-                    <Text style={[
-                      styles.filterChipText, 
-                      { fontFamily: isActive ? fontFamily.bodyBold : fontFamily.bodySemiBold },
-                      isActive && styles.filterChipTextActive
-                    ]}>
+                    <Text
+                      style={[
+                        styles.filterChipText,
+                        {
+                          fontFamily: isActive
+                            ? fontFamily.bodyBold
+                            : fontFamily.bodySemiBold,
+                        },
+                        isActive && styles.filterChipTextActive,
+                      ]}
+                    >
                       {f}
                     </Text>
                   </TouchableOpacity>
@@ -188,64 +202,151 @@ export default function HistoryScreen({ onBack, onNavigate }) {
 
           {/* Transaction List */}
           <View style={styles.listSection}>
-            {TRANSACTIONS.map((group, idx) => (
-              <View key={idx} style={styles.groupBlock}>
-                <Text style={[styles.groupTitle, { fontFamily: fontFamily.headlineExtraBold }]}>
-                  {group.group}
+            {loading ? (
+              <ActivityIndicator
+                size="large"
+                color={colors.primary}
+                style={{ marginTop: 40 }}
+              />
+            ) : historyData.length === 0 ? (
+              <View style={{ alignItems: "center", marginTop: 40 }}>
+                <MaterialIcons
+                  name="receipt-long"
+                  size={48}
+                  color={colors.outlineVariant}
+                />
+                <Text
+                  style={{
+                    fontFamily: fontFamily.bodyMedium,
+                    color: colors.onSurfaceVariant,
+                    marginTop: 12,
+                  }}
+                >
+                  Chưa có giao dịch nào
                 </Text>
-                
-                <View style={styles.groupItemsContainer}>
-                  {group.items.map(item => {
-                    const isSuccess = item.status === 'Thành công';
-                    return (
-                      <TouchableOpacity key={item.id} activeOpacity={0.7} style={styles.txItem} onPress={() => onNavigate?.('tx_detail')}>
-                        <View style={[styles.txIconBox, { backgroundColor: item.iconBg }]}>
-                          <MaterialIcons name={item.icon} size={20} color={item.iconColor} />
-                        </View>
-                        
-                        <View style={styles.txContent}>
-                          <View style={styles.txRowTop}>
-                            <Text style={[styles.txRefTitle, { fontFamily: fontFamily.bodyBold }]} numberOfLines={1}>
-                              {item.title}
-                            </Text>
-                            <Text style={[styles.txAmount, { fontFamily: fontFamily.bodyBold, color: item.amountColor }]}>
-                              {item.amount}
-                            </Text>
-                          </View>
-                          
-                          <View style={styles.txRowBottom}>
-                            <View style={styles.txDetailsCol}>
-                              <Text style={styles.txId}>
-                                {item.txId}
-                              </Text>
-                              <Text style={[styles.txTimeInfo, { fontFamily: fontFamily.bodyMedium }]}>
-                                {item.type} • {item.time}
-                              </Text>
-                            </View>
-                            
-                            <View style={[styles.statusBadge, isSuccess ? styles.statusSuccess : styles.statusFailed]}>
-                              <Text style={[styles.statusText, isSuccess ? styles.statusTextSuccess : styles.statusTextFailed, { fontFamily: fontFamily.bodyBold }]}>
-                                {item.status}
-                              </Text>
-                            </View>
-                          </View>
-                        </View>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
               </View>
-            ))}
+            ) : (
+              historyData.map((group, idx) => (
+                <View key={idx} style={styles.groupBlock}>
+                  <Text
+                    style={[
+                      styles.groupTitle,
+                      { fontFamily: fontFamily.headlineExtraBold },
+                    ]}
+                  >
+                    {group.group}
+                  </Text>
+
+                  <View style={styles.groupItemsContainer}>
+                    {group.items.map((item) => {
+                      const isSuccess = item.status === "Thành công";
+                      return (
+                        <TouchableOpacity
+                          key={item.id}
+                          activeOpacity={0.7}
+                          style={styles.txItem}
+                          // TRUYỀN DỮ LIỆU CỦA ITEM NÀY SANG CHI TIẾT
+                          onPress={() => onNavigate?.("tx_detail", item)}
+                        >
+                          <View
+                            style={[
+                              styles.txIconBox,
+                              { backgroundColor: item.iconBg },
+                            ]}
+                          >
+                            <MaterialIcons
+                              name={item.icon}
+                              size={20}
+                              color={item.iconColor}
+                            />
+                          </View>
+
+                          <View style={styles.txContent}>
+                            <View style={styles.txRowTop}>
+                              <Text
+                                style={[
+                                  styles.txRefTitle,
+                                  { fontFamily: fontFamily.bodyBold },
+                                ]}
+                                numberOfLines={1}
+                              >
+                                {item.title}
+                              </Text>
+                              <Text
+                                style={[
+                                  styles.txAmount,
+                                  {
+                                    fontFamily: fontFamily.bodyBold,
+                                    color: item.amountColor,
+                                  },
+                                ]}
+                              >
+                                {item.amount}
+                              </Text>
+                            </View>
+
+                            <View style={styles.txRowBottom}>
+                              <View style={styles.txDetailsCol}>
+                                <Text style={styles.txId}>{item.txId}</Text>
+                                <Text
+                                  style={[
+                                    styles.txTimeInfo,
+                                    { fontFamily: fontFamily.bodyMedium },
+                                  ]}
+                                >
+                                  {item.type} • {item.time}
+                                </Text>
+                              </View>
+
+                              <View
+                                style={[
+                                  styles.statusBadge,
+                                  isSuccess
+                                    ? styles.statusSuccess
+                                    : styles.statusFailed,
+                                ]}
+                              >
+                                <Text
+                                  style={[
+                                    styles.statusText,
+                                    isSuccess
+                                      ? styles.statusTextSuccess
+                                      : styles.statusTextFailed,
+                                    { fontFamily: fontFamily.bodyBold },
+                                  ]}
+                                >
+                                  {item.status}
+                                </Text>
+                              </View>
+                            </View>
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+              ))
+            )}
           </View>
 
           {/* Pagination */}
-          <View style={styles.paginationBlock}>
-            <TouchableOpacity activeOpacity={0.7} style={styles.paginationBtn}>
-              <Text style={[styles.paginationText, { fontFamily: fontFamily.bodyBold }]}>
-                Xem thêm giao dịch cũ hơn
-              </Text>
-            </TouchableOpacity>
-          </View>
+          {!loading && historyData.length > 0 && (
+            <View style={styles.paginationBlock}>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                style={styles.paginationBtn}
+              >
+                <Text
+                  style={[
+                    styles.paginationText,
+                    { fontFamily: fontFamily.bodyBold },
+                  ]}
+                >
+                  Xem thêm giao dịch cũ hơn
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </ScrollView>
       </View>
     </SafeAreaView>
@@ -260,38 +361,38 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: colors.surface,
-    alignItems: 'center',
+    alignItems: "center",
   },
-  
+
   // Header Shell
   header: {
-    width: '100%',
+    width: "100%",
     height: 64, // h-16
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 16, // px-4 offset matching html flex-row
-    backgroundColor: '#f8f9fa',
+    backgroundColor: "#f8f9fa",
   },
   headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   iconBtn: {
     width: 40,
     height: 40,
     borderRadius: 20, // rounded-full
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   headerTitle: {
     fontSize: 18, // text-lg
-    color: '#003063',
+    color: "#003063",
     letterSpacing: -0.5,
   },
   headerDivider: {
-    width: '100%',
+    width: "100%",
     height: 1, // h-[1px]
     backgroundColor: colors.surfaceContainerLow, // #f3f4f5
   },
@@ -299,7 +400,7 @@ const styles = StyleSheet.create({
   // Main Scroll
   scroll: {
     flex: 1,
-    width: '100%',
+    width: "100%",
     maxWidth: 448, // max-w-md
   },
   scrollContent: {
@@ -313,14 +414,14 @@ const styles = StyleSheet.create({
     gap: 16, // space-y-4
   },
   searchBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     height: 48, // h-12
-    backgroundColor: '#ffffff', // bg-surface-container-lowest
+    backgroundColor: "#ffffff", // bg-surface-container-lowest
     borderRadius: 16, // rounded-ROUND_FOUR
     paddingHorizontal: 16, // pl-12 pr-4 rough match
     // Shadow simulation
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
@@ -335,7 +436,7 @@ const styles = StyleSheet.create({
     color: colors.onSurface,
   },
   filterRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 8, // gap-2
     paddingBottom: 8, // pb-2
     paddingRight: 24,
@@ -343,10 +444,10 @@ const styles = StyleSheet.create({
   filterChip: {
     paddingHorizontal: 20, // px-5
     paddingVertical: 10, // py-2.5
-    backgroundColor: '#ffffff', // bg-surface-container-lowest
+    backgroundColor: "#ffffff", // bg-surface-container-lowest
     borderRadius: 16, // rounded-ROUND_FOUR
     borderWidth: 1,
-    borderColor: 'rgba(194, 198, 210, 0.1)', // border-outline-variant/10
+    borderColor: "rgba(194, 198, 210, 0.1)", // border-outline-variant/10
   },
   filterChipActive: {
     backgroundColor: colors.primary,
@@ -376,7 +477,7 @@ const styles = StyleSheet.create({
   groupTitle: {
     fontSize: 10, // text-[10px]
     color: colors.onSurfaceVariant,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
     letterSpacing: 1.5, // tracking-[0.15em]
     paddingHorizontal: 4, // px-1
   },
@@ -386,13 +487,13 @@ const styles = StyleSheet.create({
 
   // Item Card
   txItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 16, // gap-4
     padding: 12, // p-3
-    backgroundColor: '#ffffff', // bg-surface-container-lowest
+    backgroundColor: "#ffffff", // bg-surface-container-lowest
     borderRadius: 16, // rounded-ROUND_FOUR
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.02, // shadow-[0_2px_8px_rgba(0,0,0,0.02)]
     shadowRadius: 8,
@@ -402,17 +503,17 @@ const styles = StyleSheet.create({
     width: 44, // w-11
     height: 44, // h-11
     borderRadius: 16, // rounded-2xl
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   txContent: {
     flex: 1,
     minWidth: 0,
   },
   txRowTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
     marginBottom: 4, // mb-0.5
   },
   txRefTitle: {
@@ -425,18 +526,18 @@ const styles = StyleSheet.create({
     marginLeft: 8, // ml-2
   },
   txRowBottom: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
   },
   txDetailsCol: {
-    flexDirection: 'col', // default
+    flexDirection: "col", // default
   },
   txId: {
-    fontFamily: 'monospace',
+    fontFamily: "monospace",
     fontSize: 9, // text-[9px]
     color: colors.onSurfaceVariant,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
     letterSpacing: -0.5, // tracking-tighter
     marginBottom: 2,
   },
@@ -444,7 +545,7 @@ const styles = StyleSheet.create({
     fontSize: 10, // text-[10px]
     color: colors.onSurfaceVariant,
   },
-  
+
   // Status Indicator
   statusBadge: {
     paddingHorizontal: 8, // px-2
@@ -453,27 +554,27 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   statusSuccess: {
-    backgroundColor: '#f0fdf4', // green-50
-    borderColor: 'rgba(220, 252, 231, 0.5)', // green-100/50
+    backgroundColor: "#f0fdf4", // green-50
+    borderColor: "rgba(220, 252, 231, 0.5)", // green-100/50
   },
   statusFailed: {
-    backgroundColor: '#fef2f2', // red-50
-    borderColor: 'rgba(254, 226, 226, 0.5)', // red-100/50
+    backgroundColor: "#fef2f2", // red-50
+    borderColor: "rgba(254, 226, 226, 0.5)", // red-100/50
   },
   statusText: {
     fontSize: 10, // text-[10px]
   },
   statusTextSuccess: {
-    color: '#15803d', // green-700
+    color: "#15803d", // green-700
   },
   statusTextFailed: {
-    color: '#b91c1c', // red-700
+    color: "#b91c1c", // red-700
   },
 
   // Pagination Element
   paginationBlock: {
     marginTop: 32, // mt-8
-    alignItems: 'center',
+    alignItems: "center",
   },
   paginationBtn: {
     paddingHorizontal: 24, // px-6
@@ -483,7 +584,7 @@ const styles = StyleSheet.create({
   paginationText: {
     color: colors.primary,
     fontSize: 12, // text-xs
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
     letterSpacing: 2, // tracking-widest
   },
 });

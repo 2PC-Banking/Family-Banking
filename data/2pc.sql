@@ -17,6 +17,7 @@ CREATE TABLE Customer (
     customerID VARCHAR(50) PRIMARY KEY,
     branchID VARCHAR(50),
     name VARCHAR(255),
+    pass VARCHAR(255),
     address VARCHAR(255),
     phone VARCHAR(20),
     FOREIGN KEY (branchID) REFERENCES Branch(branchID)
