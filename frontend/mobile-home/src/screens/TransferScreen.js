@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,15 +7,17 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
-  Alert,              // Thêm Alert để hiện thông báo lỗi/thành công
-  ActivityIndicator,  // Thêm ActivityIndicator để làm icon loading
+  Alert,
+  ActivityIndicator,
+  Modal, 
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { MaterialIcons } from "@expo/vector-icons";
 import { colors } from "../theme/colors";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// IMPORT apiClient để gọi Backend (Nhớ kiểm tra lại đường dẫn import này cho đúng với project của bạn)
-import { apiClient } from "../services/apiClient"; 
+// Import API (Bổ sung thêm requestOtpAPI)
+import { getBalanceAPI, getAccountInfoAPI, requestOtpAPI } from "../services/apiService"; 
 
 const fontFamily = {
   headlineExtraBold: "Manrope_800ExtraBold",
@@ -27,146 +29,150 @@ const fontFamily = {
   bodyBold: "Inter_700Bold",
 };
 
+const BANKS = [
+  "Heritage Digital Bank (Nội bộ)",
+  "Vietcombank - NHTMCP Ngoại Thương VN",
+  "Techcombank - NHTMCP Kỹ Thương VN",
+  "MBBank - NHTMCP Quân Đội",
+  "BIDV - NHTMCP Đầu tư và Phát triển VN"
+];
+
 export default function TransferScreen({ onBack, onConfirm }) {
-  const [bank, setBank] = useState("Vietcombank - NHTMCP Ngoại Thương VN");
-  const [accountNo, setAccountNo] = useState("1029384756");
+  const [bank, setBank] = useState(BANKS[0]);
+  const [isBankModalVisible, setBankModalVisible] = useState(false); 
+
+  const [accountNo, setAccountNo] = useState("");
+  const [recipientName, setRecipientName] = useState(""); 
+  const [isFetchingName, setIsFetchingName] = useState(false);
+
   const [amount, setAmount] = useState("");
-  const [note, setNote] = useState("NGUYEN VAN B chuyen tien");
+  const [note, setNote] = useState("Chuyen tien");
   
-  // Thêm state để quản lý trạng thái đang gọi API
-  const [isLoading, setIsLoading] = useState(false);
+  const [myAccount, setMyAccount] = useState({ accountnumber: "---", balance: 0 });
+  const [isLoading, setIsLoading] = useState(false); // State quản lý loading khi bấm nút
 
-  const onQuickAmount = (val) => {
-    setAmount(val.replace(/,/g, ""));
-  };
+  useEffect(() => {
+    const fetchMyData = async () => {
+      const userStr = await AsyncStorage.getItem("userData");
+      if (userStr) {
+        const { accountnumber } = JSON.parse(userStr);
+        try {
+            const data = await getBalanceAPI(accountnumber);
+            setMyAccount({ accountnumber: data.accountnumber, balance: data.balance });
+        } catch (error) {
+            console.log("Không thể lấy số dư, có thể tài khoản chưa tồn tại trong DB.");
+        }
+      }
+    };
+    fetchMyData();
+  }, []);
 
-  // HÀM XỬ LÝ KHI BẤM NÚT TIẾP TỤC
+  useEffect(() => {
+    const fetchRecipientName = async () => {
+      if (accountNo.length >= 5) {
+        setIsFetchingName(true);
+        if (bank === "Heritage Digital Bank (Nội bộ)") {
+          try {
+            const res = await getAccountInfoAPI(accountNo);
+            setRecipientName(res.customerName);
+          } catch (error) {
+            setRecipientName("KHÔNG TÌM THẤY TÀI KHOẢN");
+          }
+        } else {
+          setRecipientName("NGUYEN VAN A (Liên ngân hàng)");
+        }
+        setIsFetchingName(false);
+      } else {
+        setRecipientName("");
+      }
+    };
+
+    const delayDebounceFn = setTimeout(() => {
+      fetchRecipientName();
+    }, 800);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [accountNo, bank]);
+
+  const onQuickAmount = (val) => setAmount(val.replace(/,/g, ""));
+
   const handleContinue = async () => {
-    // 1. Kiểm tra đầu vào (Validation)
-    if (!accountNo || !amount) {
-      Alert.alert("Thông báo", "Vui lòng nhập đầy đủ số tài khoản và số tiền.");
-      return;
+    if (!myAccount.accountnumber || myAccount.accountnumber === "---") {
+        Alert.alert("Lỗi bảo mật", "Tài khoản của bạn chưa được thiết lập số tài khoản thẻ. Vui lòng liên hệ CSKH.");
+        return;
     }
 
     const numericAmount = parseFloat(amount.replace(/,/g, ""));
-    if (isNaN(numericAmount) || numericAmount <= 0) {
-      Alert.alert("Thông báo", "Số tiền chuyển không hợp lệ.");
+    if (!accountNo || isNaN(numericAmount) || numericAmount <= 0) {
+      Alert.alert("Lỗi", "Vui lòng nhập số liệu hợp lệ.");
+      return;
+    }
+    if (recipientName === "KHÔNG TÌM THẤY TÀI KHOẢN" || recipientName === "") {
+      Alert.alert("Lỗi", "Số tài khoản nhận không hợp lệ.");
+      return;
+    }
+    if (numericAmount > myAccount.balance) {
+      Alert.alert("Lỗi", "Số dư không đủ để thực hiện giao dịch.");
       return;
     }
 
-    // 2. Bắt đầu gọi API
+    // GỌI API YÊU CẦU GỬI OTP TRƯỚC KHI CHUYỂN TRANG
     setIsLoading(true);
-
     try {
-      // Gọi API chuyển tiền
-      const response = await apiClient("/transfer", {
-        method: "POST",
-        body: JSON.stringify({
-          // Hardcode FromAccount tạm thời khớp với giao diện (phải có trong DB của bạn)
-          FromAccount: "091288889999", 
+        await requestOtpAPI(myAccount.accountnumber); 
+        
+        const payload = {
+          FromAccount: myAccount.accountnumber,
           ToAccount: accountNo,
-          Amount: numericAmount
-        }),
-      });
-
-      // 3. Xử lý thành công
-      Alert.alert("Thành công", response.message || "Chuyển tiền thành công!", [
-        {
-          text: "OK",
-          onPress: () => {
-            // Gọi onConfirm để báo cho component cha biết chuyển hướng (sang SuccessScreen)
-            if (onConfirm) onConfirm(response);
-          },
-        },
-      ]);
+          Amount: numericAmount,
+          Note: note,
+          RecipientName: recipientName, 
+        };
+        
+        if (onConfirm) onConfirm(payload); 
     } catch (error) {
-      // 4. Xử lý lỗi (Lấy message từ apiClient.js ném ra)
-      Alert.alert("Giao dịch thất bại", error.message || "Không thể kết nối đến máy chủ.");
+        Alert.alert("Lỗi", error.message || "Không thể yêu cầu mã OTP");
     } finally {
-      setIsLoading(false); // Tắt hiệu ứng loading
+        setIsLoading(false);
     }
   };
 
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.root}>
-        {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity activeOpacity={0.7} style={styles.backBtn} onPress={onBack}>
             <MaterialIcons name="arrow-back" size={24} color="#003063" />
           </TouchableOpacity>
-          <Text style={[styles.headerCenterTitle, { fontFamily: fontFamily.headlineExtraBold }]}>
-            Chuyển tiền đến số tài khoản
-          </Text>
+          <Text style={[styles.headerCenterTitle, { fontFamily: fontFamily.headlineExtraBold }]}>Chuyển tiền</Text>
           <View style={styles.headerSpacer} />
         </View>
 
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Breadcrumb */}
-          <View style={styles.breadcrumbRow}>
-            <View style={[styles.breadcrumbBar, styles.breadcrumbActive]} />
-            <View style={styles.breadcrumbBar} />
-            <View style={styles.breadcrumbBar} />
-          </View>
-
-          {/* Title */}
-          <View style={styles.headerTitleRow}>
-            <Text style={[styles.headerTitle, { fontFamily: fontFamily.headlineExtraBold }]}>
-              Chuyển tiền
-            </Text>
-            <Text style={[styles.headerSubtitle, { fontFamily: fontFamily.bodyMedium }]}>
-              Bước 1: Nhập thông tin giao dịch thụ hưởng
-            </Text>
-          </View>
-
-          {/* Main Form */}
+        <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.mainContainer}>
-            {/* Source Account Card */}
-            <LinearGradient
-              colors={[colors.primary, colors.primaryContainer]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.sourceCard}
-            >
+            <LinearGradient colors={[colors.primary, colors.primaryContainer]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.sourceCard}>
               <View style={styles.sourceCardTop}>
-                <Text style={[styles.sourceCardLabel, { fontFamily: fontFamily.bodyBold }]}>
-                  Tài khoản nguồn
-                </Text>
-                <View style={styles.defaultPill}>
-                  <Text style={[styles.defaultPillText, { fontFamily: fontFamily.bodyBold }]}>DEFAULT</Text>
-                </View>
+                <Text style={[styles.sourceCardLabel, { fontFamily: fontFamily.bodyBold }]}>Tài khoản nguồn</Text>
+                <View style={styles.defaultPill}><Text style={[styles.defaultPillText, { fontFamily: fontFamily.bodyBold }]}>DEFAULT</Text></View>
               </View>
-
               <View style={styles.sourceCardBottom}>
                 <View>
-                  <Text style={[styles.sourceAccountNo, { fontFamily: fontFamily.headlineBold, fontSize: 15 }]}>
-                    0912 8888 9999
-                  </Text>
-                  <Text style={[styles.sourceAccountName, { fontFamily: fontFamily.bodyRegular }]}>
-                    Signature Savings
-                  </Text>
+                  <Text style={[styles.sourceAccountNo, { fontFamily: fontFamily.headlineBold }]}>{myAccount.accountnumber}</Text>
+                  <Text style={[styles.sourceAccountName, { fontFamily: fontFamily.bodyRegular }]}>Tài khoản thanh toán</Text>
                 </View>
                 <View style={styles.alignRight}>
-                  <Text style={[styles.sourceBalance, { fontFamily: fontFamily.headlineExtraBold, fontSize: 18 }]}>
-                    2,450,000,000 ₫
-                  </Text>
+                  <Text style={[styles.sourceBalance, { fontFamily: fontFamily.headlineExtraBold }]}>{myAccount.balance.toLocaleString('vi-VN')} ₫</Text>
                   <Text style={[styles.sourceBalanceLabel, { fontFamily: fontFamily.bodyRegular }]}>Khả dụng</Text>
                 </View>
               </View>
             </LinearGradient>
 
-            {/* Form Inputs */}
             <View style={styles.formBlock}>
-              {/* Target Bank */}
               <View>
                 <Text style={[styles.inputLabel, { fontFamily: fontFamily.bodyBold }]}>Ngân hàng thụ hưởng</Text>
                 <View style={styles.inputWrapper}>
                   <MaterialIcons name="account-balance" size={18} color={colors.outline} style={styles.inputIcon} />
-                  <TouchableOpacity style={styles.fakeSelectWrapper} activeOpacity={0.7}>
+                  <TouchableOpacity style={styles.fakeSelectWrapper} activeOpacity={0.7} onPress={() => setBankModalVisible(true)}>
                     <Text style={[styles.selectText, { fontFamily: fontFamily.bodySemiBold }]} numberOfLines={1}>
                       {bank}
                     </Text>
@@ -175,111 +181,100 @@ export default function TransferScreen({ onBack, onConfirm }) {
                 </View>
               </View>
 
-              {/* Account Number & Name */}
               <View style={styles.spacerCol1}>
                 <View>
                   <Text style={[styles.inputLabel, { fontFamily: fontFamily.bodyBold }]}>Số tài khoản</Text>
                   <View style={[styles.inputWrapper, { borderBottomColor: accountNo ? colors.primary : colors.outlineVariant }]}>
                     <MaterialIcons name="dialpad" size={18} color={accountNo ? "#003063" : colors.outline} style={styles.inputIcon} />
-                    <TextInput
-                      style={[styles.textInput, { fontFamily: fontFamily.headlineBold }]}
-                      placeholder="Nhập số tài khoản"
-                      placeholderTextColor="rgba(115, 119, 130, 0.4)"
-                      value={accountNo}
-                      onChangeText={setAccountNo}
-                      keyboardType="numeric"
-                    />
+                    <TextInput style={[styles.textInput, { fontFamily: fontFamily.headlineBold }]} placeholder="Nhập số tài khoản" placeholderTextColor="rgba(115, 119, 130, 0.4)" value={accountNo} onChangeText={setAccountNo} keyboardType="numeric" />
                   </View>
                 </View>
 
                 <View style={{ marginTop: 16 }}>
                   <Text style={[styles.inputLabel, { fontFamily: fontFamily.bodyBold }]}>Tên người nhận</Text>
-                  <View style={styles.inputWrapper}>
+                  <View style={[styles.inputWrapper, { backgroundColor: 'rgba(0,0,0,0.02)', borderRadius: 8, paddingHorizontal: 8, borderBottomWidth: 0, marginTop: 4 }]}>
                     <MaterialIcons name="verified-user" size={18} color={colors.primary} style={styles.inputIcon} />
-                    <TextInput
-                      style={[styles.textInput, styles.textInputPrimary, { fontFamily: fontFamily.headlineBold }]}
-                      value="NGUYEN VAN A"
-                      editable={false}
-                    />
+                    {isFetchingName ? (
+                        <ActivityIndicator size="small" color={colors.primary} style={{ marginLeft: 10 }} />
+                    ) : (
+                        <TextInput 
+                            style={[styles.textInput, styles.textInputPrimary, { fontFamily: fontFamily.headlineBold, color: recipientName.includes("KHÔNG") ? 'red' : colors.primary }]} 
+                            value={recipientName || "Vui lòng nhập Số TK"} 
+                            editable={false} 
+                        />
+                    )}
                   </View>
                 </View>
               </View>
 
-              {/* Amount */}
               <View>
                 <Text style={[styles.inputLabel, { fontFamily: fontFamily.bodyBold }]}>Số tiền chuyển</Text>
                 <View style={[styles.inputWrapper, { borderBottomColor: amount ? colors.primary : colors.outlineVariant }]}>
-                  <MaterialIcons name="payments" size={18} color={amount ? "#003063" : colors.outline} style={styles.inputIcon} />
-                  <TextInput
-                    style={[styles.amountInput, { fontFamily: fontFamily.headlineExtraBold }]}
-                    placeholder="0"
-                    placeholderTextColor="rgba(115, 119, 130, 0.2)"
-                    value={amount}
-                    onChangeText={setAmount}
-                    keyboardType="numeric"
-                  />
+                  <TextInput style={[styles.amountInput, { fontFamily: fontFamily.headlineExtraBold }]} placeholder="0" placeholderTextColor="rgba(115, 119, 130, 0.2)" value={amount} onChangeText={setAmount} keyboardType="numeric" />
                   <Text style={[styles.currencyLabel, { fontFamily: fontFamily.headlineBold }]}>VND</Text>
                 </View>
-
-                {/* Quick Amounts */}
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickAmountsRow}>
-                  {["500,000", "1,000,000", "5,000,000", "Hết số dư"].map((aq, idx) => (
+                  {["500,000", "1,000,000", "5,000,000"].map((aq, idx) => (
                     <TouchableOpacity key={idx} style={styles.quickAmountPill} onPress={() => onQuickAmount(aq)}>
                       <Text style={[styles.quickAmountText, { fontFamily: fontFamily.bodyBold }]}>{aq}</Text>
                     </TouchableOpacity>
                   ))}
                 </ScrollView>
               </View>
-
-              {/* Note */}
+              
               <View>
-                <Text style={[styles.inputLabel, { fontFamily: fontFamily.bodyBold }]}>Nội dung chuyển khoản</Text>
+                <Text style={[styles.inputLabel, { fontFamily: fontFamily.bodyBold }]}>Nội dung</Text>
                 <View style={[styles.inputWrapper, { borderBottomColor: note ? colors.primary : colors.outlineVariant }]}>
-                  <MaterialIcons name="notes" size={18} color={note ? "#003063" : colors.outline} style={[styles.inputIcon, { alignSelf: "flex-start", marginTop: 2 }]} />
-                  <TextInput
-                    style={[styles.textArea, { fontFamily: fontFamily.bodySemiBold }]}
-                    placeholder="Nhập nội dung"
-                    placeholderTextColor="rgba(115, 119, 130, 0.4)"
-                    value={note}
-                    onChangeText={setNote}
-                    multiline
-                  />
+                  <TextInput style={[styles.textArea, { fontFamily: fontFamily.bodySemiBold }]} placeholder="Nhập nội dung" value={note} onChangeText={setNote} multiline />
                 </View>
               </View>
             </View>
 
-            {/* ACTION BUTTON MỚI */}
             <View style={styles.actionBlock}>
-              <TouchableOpacity
-                activeOpacity={0.8}
-                style={[styles.primaryBtn, isLoading && { opacity: 0.7 }]}
-                onPress={handleContinue}
-                disabled={isLoading} // Khoá nút khi đang gọi API
-              >
+              <TouchableOpacity activeOpacity={0.8} style={[styles.primaryBtn, isLoading && { opacity: 0.7 }]} onPress={handleContinue} disabled={isLoading}>
                 {isLoading ? (
-                  <ActivityIndicator color="#ffffff" />
+                    <ActivityIndicator color="#ffffff" />
                 ) : (
-                  <>
-                    <Text style={[styles.primaryBtnText, { fontFamily: fontFamily.headlineBold }]}>Tiếp tục</Text>
-                    <MaterialIcons name="arrow-forward" size={20} color={colors.onPrimary} />
-                  </>
+                    <>
+                        <Text style={[styles.primaryBtnText, { fontFamily: fontFamily.headlineBold }]}>Tiếp tục</Text>
+                        <MaterialIcons name="arrow-forward" size={20} color={colors.onPrimary} />
+                    </>
                 )}
               </TouchableOpacity>
             </View>
           </View>
-
-          {/* Footer */}
-          <View style={styles.securityBadge}>
-            <MaterialIcons name="lock" size={12} color={colors.onSurfaceVariant} />
-            <Text style={[styles.securityText, { fontFamily: fontFamily.bodyBold }]}>Giao dịch bảo mật Sovereign AES-256</Text>
-          </View>
         </ScrollView>
+
+        <Modal visible={isBankModalVisible} animationType="slide" transparent={true}>
+            <View style={styles.modalOverlay}>
+                <View style={styles.modalContent}>
+                    <View style={styles.modalHeader}>
+                        <Text style={[styles.modalTitle, { fontFamily: fontFamily.headlineBold }]}>Chọn ngân hàng</Text>
+                        <TouchableOpacity onPress={() => setBankModalVisible(false)}>
+                            <MaterialIcons name="close" size={24} color={colors.onSurfaceVariant} />
+                        </TouchableOpacity>
+                    </View>
+                    <ScrollView showsVerticalScrollIndicator={false}>
+                        {BANKS.map((item, index) => (
+                            <TouchableOpacity 
+                                key={index} 
+                                style={[styles.bankItem, bank === item && styles.bankItemActive]}
+                                onPress={() => { setBank(item); setBankModalVisible(false); }}
+                            >
+                                <Text style={[styles.bankItemText, { fontFamily: fontFamily.bodySemiBold }]}>{item}</Text>
+                                {bank === item && <MaterialIcons name="check-circle" size={20} color={colors.primary} />}
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+                </View>
+            </View>
+        </Modal>
+
       </View>
     </SafeAreaView>
   );
 }
 
-// Giữ nguyên toàn bộ Object styles như cũ của bạn ở dưới đây
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.surface },
   root: { flex: 1, backgroundColor: colors.surface },
@@ -327,4 +322,13 @@ const styles = StyleSheet.create({
   primaryBtnText: { fontSize: 16, color: colors.onPrimary },
   securityBadge: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 24, opacity: 0.5 },
   securityText: { fontSize: 9, color: colors.onSurfaceVariant, letterSpacing: 2, textTransform: "uppercase" },
+  
+  // Style Modal
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalContent: { backgroundColor: colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: '60%' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  modalTitle: { fontSize: 18, color: colors.onSurface },
+  bankItem: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.surfaceContainerHighest },
+  bankItemActive: { backgroundColor: 'rgba(0, 48, 99, 0.05)', borderRadius: 12, paddingHorizontal: 12, borderBottomWidth: 0 },
+  bankItemText: { fontSize: 15, color: colors.onSurface },
 });

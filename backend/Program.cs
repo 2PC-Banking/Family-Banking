@@ -3,6 +3,7 @@ using backend.Data;
 using backend.models;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddMemoryCache();
 
 // 1. SERVICES
 builder.Services.AddControllers();

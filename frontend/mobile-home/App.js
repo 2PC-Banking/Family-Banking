@@ -27,6 +27,12 @@ import { colors } from "./src/theme/colors";
 export default function App() {
   const [screen, setScreen] = useState("login"); // 'login' | 'home' | 'transfer' | 'otp' | 'success' | 'history' | 'tx_detail'
 
+  // 1. State lưu dữ liệu luồng chuyển tiền (Transfer -> OTP -> Success)
+  const [transferPayload, setTransferPayload] = useState(null);
+
+  // 2. State lưu dữ liệu chi tiết của 1 giao dịch khi xem từ Lịch sử (History)
+  const [selectedTx, setSelectedTx] = useState(null);
+
   const [fontsLoaded] = useFonts({
     Manrope_400Regular,
     Manrope_600SemiBold,
@@ -49,39 +55,69 @@ export default function App() {
   return (
     <>
       <StatusBar style="dark" />
+
       {screen === "login" && <LoginScreen onLogin={() => setScreen("home")} />}
+
       {screen === "home" && (
         <HomeScreen
           onLogout={() => setScreen("login")}
           onNavigate={(s) => setScreen(s)}
         />
       )}
+
       {screen === "transfer" && (
         <TransferScreen
           onBack={() => setScreen("home")}
-          onConfirm={() => setScreen("otp")}
+          onConfirm={(payload) => {
+            // Hứng dữ liệu người dùng vừa nhập và chuyển sang OTP
+            setTransferPayload(payload);
+            setScreen("otp");
+          }}
         />
       )}
+
       {screen === "otp" && (
         <OTPScreen
+          transferData={transferPayload} // Truyền dữ liệu chuyển tiền vào OTP
           onBack={() => setScreen("transfer")}
-          onConfirm={() => setScreen("success")}
+          onConfirm={(result) => {
+            // Cập nhật lại dữ liệu (có thêm transactionId từ server) và qua Success
+            setTransferPayload(result);
+            setScreen("success");
+          }}
         />
       )}
+
       {screen === "success" && (
         <SuccessScreen
-          onNewTransaction={() => setScreen("transfer")}
-          onHome={() => setScreen("home")}
+          transactionData={transferPayload} // Truyền dữ liệu vào màn Success hiển thị
+          onNewTransaction={() => {
+            setTransferPayload(null); // Xóa data cũ
+            setScreen("transfer");
+          }}
+          onHome={() => {
+            setTransferPayload(null); // Xóa data cũ
+            setScreen("home");
+          }}
         />
       )}
+
       {screen === "history" && (
         <HistoryScreen
           onBack={() => setScreen("home")}
-          onNavigate={(s) => setScreen(s)}
+          onNavigate={(s, params) => {
+            // Nếu bấm vào 1 giao dịch, lưu thông tin giao dịch đó lại
+            if (s === "tx_detail") {
+              setSelectedTx(params);
+            }
+            setScreen(s);
+          }}
         />
       )}
+
       {screen === "tx_detail" && (
         <TransactionDetailScreen
+          transaction={selectedTx} // Truyền dữ liệu vào màn Chi tiết hiển thị
           onBack={() => setScreen("history")}
           onNewTransaction={() => setScreen("transfer")}
         />

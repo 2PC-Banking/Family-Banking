@@ -5,10 +5,16 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { MaterialIcons } from "@expo/vector-icons";
 import { colors } from "../theme/colors";
+import { useEffect } from "react"; // Nhớ import useEffect ở trên cùng
+
+// Import API chuyển tiền
+import { transferAPI } from "../services/apiService";
 
 const fontFamily = {
   headlineExtraBold: "Manrope_800ExtraBold",
@@ -20,8 +26,25 @@ const fontFamily = {
   bodyBold: "Inter_700Bold",
 };
 
-export default function OTPScreen({ onBack, onConfirm }) {
-  const [otp, setOtp] = useState(["5", "8", "", "", "", ""]);
+export default function OTPScreen({ onBack, onConfirm, transferData }) {
+  // Reset lại mảng trống (Không để sẵn "5" và "8" nữa)
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // ... (bên trong component OTPScreen)
+  useEffect(() => {
+    // Nếu mảng otp không còn ô nào trống ("") thì tự động gọi API
+    if (!otp.includes("") && !isLoading) {
+      handleFinalConfirm();
+    }
+  }, [otp]); // Lắng nghe mỗi khi mảng otp thay đổi
+
+  // Tạo string hiển thị sdt/số tài khoản bị che (Ví dụ: 0912****99)
+  const maskedAccount = transferData?.FromAccount
+    ? transferData.FromAccount.slice(0, 4) +
+      "****" +
+      transferData.FromAccount.slice(-2)
+    : "0912****99";
 
   const handleKeyPress = (key) => {
     if (key === "backspace") {
@@ -32,7 +55,7 @@ export default function OTPScreen({ onBack, onConfirm }) {
         setOtp(newOtp);
       }
     } else if (key === "fingerprint") {
-      // Biometric trigger simulation mapping exactly to HTML visual
+      // Biometric trigger simulation
     } else {
       const firstEmptyIndex = otp.findIndex((v) => v === "");
       if (firstEmptyIndex >= 0) {
@@ -45,6 +68,40 @@ export default function OTPScreen({ onBack, onConfirm }) {
 
   const getFocusedIndex = () => {
     return otp.findIndex((v) => v === "");
+  };
+
+  // GỌI API CHUYỂN TIỀN KÈM OTP
+  const handleFinalConfirm = async () => {
+    if (otp.includes("")) {
+      Alert.alert("Lỗi", "Vui lòng nhập đủ 6 số OTP");
+      return;
+    }
+
+    if (!transferData) {
+      Alert.alert("Lỗi", "Không có dữ liệu giao dịch.");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const otpString = otp.join("");
+
+      const response = await transferAPI(
+        transferData.FromAccount,
+        transferData.ToAccount,
+        transferData.Amount,
+        otpString,
+        transferData.Note || "Chuyen tien",
+      );
+
+      if (onConfirm) {
+        onConfirm({ ...transferData, serverResponse: response });
+      }
+    } catch (error) {
+      Alert.alert("Giao dịch thất bại", error.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -87,14 +144,14 @@ export default function OTPScreen({ onBack, onConfirm }) {
                 { fontFamily: fontFamily.bodyMedium },
               ]}
             >
-              Mã OTP đã được gửi đến số điện thoại{"\n"}
+              Mã OTP đã được gửi đến thiết bị của{"\n"}
               <Text
                 style={{
                   fontFamily: fontFamily.bodyBold,
                   color: colors.onSurface,
                 }}
               >
-                0912****99
+                TK {maskedAccount}
               </Text>
             </Text>
           </View>
@@ -160,11 +217,12 @@ export default function OTPScreen({ onBack, onConfirm }) {
             </TouchableOpacity>
           </View>
 
-          {/* Action Button */}
+          {/* Action Button CÓ LOADING*/}
           <TouchableOpacity
             activeOpacity={0.8}
-            onPress={onConfirm}
+            onPress={handleFinalConfirm}
             style={styles.confirmBtnWrapper}
+            disabled={isLoading}
           >
             <LinearGradient
               colors={[colors.primary, colors.primaryContainer]}
@@ -172,14 +230,18 @@ export default function OTPScreen({ onBack, onConfirm }) {
               end={{ x: 1, y: 0 }}
               style={styles.confirmBtn}
             >
-              <Text
-                style={[
-                  styles.confirmBtnText,
-                  { fontFamily: fontFamily.headlineBold },
-                ]}
-              >
-                Xác nhận
-              </Text>
+              {isLoading ? (
+                <ActivityIndicator color="#ffffff" />
+              ) : (
+                <Text
+                  style={[
+                    styles.confirmBtnText,
+                    { fontFamily: fontFamily.headlineBold },
+                  ]}
+                >
+                  Xác nhận
+                </Text>
+              )}
             </LinearGradient>
           </TouchableOpacity>
 
@@ -273,87 +335,79 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: colors.surface,
-    alignItems: "center", // HTML standard sets body to flex flex-col items-center
+    alignItems: "center",
   },
-
-  // Header
   header: {
     width: "100%",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 24, // px-6
-    paddingVertical: 16, // py-4
+    paddingHorizontal: 24,
+    paddingVertical: 16,
     backgroundColor: "#f8f9fa",
   },
   backBtn: {
-    width: 40, // w-10
-    height: 40, // h-10
-    borderRadius: 20, // rounded-full
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
   },
   headerTitle: {
-    fontSize: 18, // text-lg
+    fontSize: 18,
     color: "#003063",
-    letterSpacing: -0.5, // tracking-tight
+    letterSpacing: -0.5,
   },
   headerSpacer: {
-    width: 40, // w-10
+    width: 40,
   },
   headerDivider: {
     width: "100%",
-    height: 1, // h-[1px]
+    height: 1,
     backgroundColor: "#edeeef",
   },
-
-  // Main Auth Flow Content Wrapper
   mainContent: {
     flex: 1,
     width: "100%",
-    maxWidth: 448, // max-w-md
-    paddingHorizontal: 24, // px-6
-    paddingTop: 48, // pt-12
+    maxWidth: 448,
+    paddingHorizontal: 24,
+    paddingTop: 48,
     alignItems: "center",
   },
-
-  // Messages and Text Formatting
   messageSection: {
     alignItems: "center",
-    marginBottom: 40, // mb-10
+    marginBottom: 40,
   },
   iconCircle: {
-    width: 64, // w-16
-    height: 64, // h-16
-    borderRadius: 32, // rounded-full
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: colors.secondaryContainer,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 24, // mb-6
+    marginBottom: 24,
   },
   messageText: {
     color: colors.onSurfaceVariant,
-    fontSize: 14, // Implicit body size assumed 14
+    fontSize: 14,
     textAlign: "center",
-    lineHeight: 22, // leading-relaxed equivalent roughly
+    lineHeight: 22,
   },
-
-  // OTP Inputs Flex Config
   otpContainer: {
     flexDirection: "row",
-    gap: 12, // gap-3
+    gap: 12,
     justifyContent: "center",
-    marginBottom: 32, // mb-8
+    marginBottom: 32,
   },
   otpInputBox: {
-    width: 48, // w-12
-    height: 56, // h-14
-    borderRadius: 12, // rounded-xl
-    backgroundColor: "#ffffff", // bg-surface-container-lowest
+    width: 48,
+    height: 56,
+    borderRadius: 12,
+    backgroundColor: "#ffffff",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "rgba(194, 198, 210, 0.2)", // ring-1 ring-outline-variant/20 tracking HTML definition
+    borderColor: "rgba(194, 198, 210, 0.2)",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -361,28 +415,26 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   otpInputFocused: {
-    borderColor: colors.primary, // focus:ring-primary map
-    borderWidth: 2, // focus:ring-2
+    borderColor: colors.primary,
+    borderWidth: 2,
   },
   otpDigit: {
-    fontSize: 20, // text-xl
+    fontSize: 20,
     color: colors.onSurface,
   },
   otpPlaceholder: {
-    fontSize: 20, // text-xl
+    fontSize: 20,
     color: "rgba(0,0,0,0.3)",
   },
-
-  // Timer Section Constraints
   timerSection: {
     alignItems: "center",
-    gap: 8, // gap-2
-    marginBottom: 48, // mb-12
+    gap: 8,
+    marginBottom: 48,
   },
   timerRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8, // gap-2
+    gap: 8,
   },
   timerText: {
     color: colors.primary,
@@ -390,71 +442,63 @@ const styles = StyleSheet.create({
   },
   resendText: {
     color: colors.onSurfaceVariant,
-    fontSize: 14, // text-sm
+    fontSize: 14,
     opacity: 0.5,
   },
-
-  // Gradient Confirm Action Block Overlay
   confirmBtnWrapper: {
     width: "100%",
     borderRadius: 12,
     shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.2, // shadow-primary/20
+    shadowOpacity: 0.2,
     shadowRadius: 15,
     elevation: 8,
   },
   confirmBtn: {
     width: "100%",
-    paddingVertical: 16, // py-4
-    borderRadius: 12, // rounded-xl
+    paddingVertical: 16,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
   },
   confirmBtnText: {
     color: "#ffffff",
-    fontSize: 16, // React Native standard match for button bold sizing
+    fontSize: 16,
   },
-
-  // Phase Footer
   phaseNoteRow: {
-    marginTop: "auto", // mt-auto
-    paddingVertical: 32, // py-8
+    marginTop: "auto",
+    paddingVertical: 32,
     alignItems: "center",
   },
   phasePill: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8, // gap-2
-    paddingHorizontal: 16, // px-4
-    paddingVertical: 8, // py-2
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     backgroundColor: colors.surfaceContainer,
-    borderRadius: 16, // rounded-full
+    borderRadius: 16,
   },
   pulseDot: {
-    width: 8, // w-2
-    height: 8, // h-2
-    borderRadius: 4, // rounded-full
+    width: 8,
+    height: 8,
+    borderRadius: 4,
     backgroundColor: colors.tertiary,
-    // HTML defines animate-pulse. Requires Reanimated/Animated in full build, static simulated here
   },
   phaseText: {
-    fontSize: 11, // text-[11px]
+    fontSize: 11,
     color: colors.onSurfaceVariant,
-    letterSpacing: 0.3, // tracking-wide
+    letterSpacing: 0.3,
   },
-
-  // Custom Bottom Pin Keypad Grid Settings
   keypadContainer: {
     width: "100%",
-    maxWidth: 448, // max-w-md
+    maxWidth: 448,
     backgroundColor: colors.surfaceContainerLow,
-    paddingTop: 5, // pt-4
-    paddingBottom: 32, // pb-8
-    paddingHorizontal: 24, // px-6
-    borderTopLeftRadius: 40, // rounded-t-[2.5rem]
+    paddingTop: 5,
+    paddingBottom: 32,
+    paddingHorizontal: 24,
+    borderTopLeftRadius: 40,
     borderTopRightRadius: 40,
-    // Custom Shadow Implementation
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -8 },
     shadowOpacity: 0.04,
@@ -467,14 +511,14 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   keyBtn: {
-    width: "30%", // Grid-cols-3 minus gap 4
+    width: "30%",
     aspectRatio: 1.5,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 12, // rounded-xl
+    borderRadius: 12,
   },
   keyText: {
-    fontSize: 24, // text-2xl
+    fontSize: 24,
     color: colors.onSurface,
   },
 });

@@ -47,4 +47,4 @@ namespace backend.controller
         public string phone { get; set; } = string.Empty;
         public string pass { get; set; } = string.Empty;
     }
-}
+}   
