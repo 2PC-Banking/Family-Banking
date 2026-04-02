@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   TextInput,
@@ -19,20 +19,13 @@ export default function PillInput({
   fontFamily,
   ...inputProps
 }) {
-  const [focused, setFocused] = useState(false);
-
   return (
-    <View
-      style={[
-        styles.container,
-        focused && styles.containerFocused,
-      ]}
-    >
+    <View style={styles.container}>
       {/* Left icon */}
       <MaterialIcons
         name={iconName}
         size={22}
-        color={focused ? colors.primary : colors.outline}
+        color={colors.outline}
         style={styles.leftIcon}
       />
 
@@ -40,8 +33,10 @@ export default function PillInput({
       <TextInput
         style={[styles.input, { fontFamily }]}
         placeholderTextColor={colors.outline + '99'}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
+        autoCorrect={false}
+        autoComplete="off"
+        importantForAutofill="no"
+        underlineColorAndroid="transparent"
         {...inputProps}
       />
 
@@ -51,7 +46,7 @@ export default function PillInput({
           <MaterialIcons
             name={rightIconName}
             size={22}
-            color={focused ? colors.onSurfaceVariant : colors.outline}
+            color={colors.outline}
           />
         </TouchableOpacity>
       )}
@@ -69,15 +64,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderWidth: 2,
     borderColor: 'transparent',
-  },
-  containerFocused: {
-    backgroundColor: '#ffffff',
-    borderColor: colors.primary + '33', // 20% opacity
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    elevation: 4,
   },
   leftIcon: {
     marginRight: 8,
