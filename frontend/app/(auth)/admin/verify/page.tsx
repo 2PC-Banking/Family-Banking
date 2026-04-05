@@ -15,9 +15,9 @@ export default function VerifyPage() {
   // Redirect if not in OTP flow
   useEffect(() => {
     if (isAuthenticated) {
-      router.push('/dashboard');
+      router.push('/admin/dashboard');
     } else if (!needsOtp) {
-      router.push('/login');
+      router.push('/admin/login');
     }
   }, [isAuthenticated, needsOtp, router]);
 
@@ -29,7 +29,7 @@ export default function VerifyPage() {
     try {
       const success = await verifyOtp(code);
       if (success) {
-        router.push('/dashboard');
+        router.push('/admin/dashboard');
       } else {
         setError('Invalid verification code');
         setCode('');

@@ -1,15 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { SystemStatus } from '@/components/dashboard/SystemStatus';
-import { SettingsHeader } from '@/components/settings/SettingsHeader';
-import { TransactionSettingsCard } from '@/components/settings/TransactionSettingsCard';
-import { LogRetentionCard } from '@/components/settings/LogRetentionCard';
-import { MonitoringAlertsCard } from '@/components/settings/MonitoringAlertsCard';
-import { ParticipantNodesCard } from '@/components/settings/ParticipantNodesCard';
-import { SecuritySettingsCard } from '@/components/settings/SecuritySettingsCard';
-import { SystemInformationCard } from '@/components/settings/SystemInformationCard';
-import { NodeConfigurationModal } from '@/components/settings/NodeConfigurationModal';
+import { SystemStatus } from '@/components/admin/dashboard/SystemStatus';
+import { SettingsHeader } from '@/components/admin/settings/SettingsHeader';
+import { TransactionSettingsCard } from '@/components/admin/settings/TransactionSettingsCard';
+import { LogRetentionCard } from '@/components/admin/settings/LogRetentionCard';
+import { MonitoringAlertsCard } from '@/components/admin/settings/MonitoringAlertsCard';
+import { ParticipantNodesCard } from '@/components/admin/settings/ParticipantNodesCard';
+import { SecuritySettingsCard } from '@/components/admin/settings/SecuritySettingsCard';
+import { SystemInformationCard } from '@/components/admin/settings/SystemInformationCard';
+import { NodeConfigurationModal } from '@/components/admin/settings/NodeConfigurationModal';
 
 interface ParticipantNode {
   id: string;

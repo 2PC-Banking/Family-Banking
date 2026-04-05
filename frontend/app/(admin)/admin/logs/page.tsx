@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useCallback } from 'react';
-import { SystemStatus } from '@/components/dashboard/SystemStatus';
-import { LogsHeader } from '@/components/logs/LogsHeader';
-import { LogsList } from '@/components/logs/LogsList';
-import { LogDetailModal } from '@/components/logs/LogDetailModal';
+import { SystemStatus } from '@/components/admin/dashboard/SystemStatus';
+import { LogsHeader } from '@/components/admin/logs/LogsHeader';
+import { LogsList } from '@/components/admin/logs/LogsList';
+import { LogDetailModal } from '@/components/admin/logs/LogDetailModal';
 import { systemLogs } from '@/lib/mockData';
 
 interface Log {

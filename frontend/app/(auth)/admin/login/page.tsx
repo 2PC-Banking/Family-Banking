@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
+import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 
@@ -23,7 +24,7 @@ export default function LoginPage() {
     try {
       const success = await login(username, password);
       if (success) {
-        router.push('/verify');
+        router.push('/admin/verify');
       } else {
         setError('Invalid username or password');
       }
@@ -141,6 +142,16 @@ export default function LoginPage() {
           <div className="text-center text-xs text-slate-600 border-t border-slate-200 pt-6">
             <p className="font-medium">Authorized personnel only.</p>
             <p>Unauthorized access is prohibited.</p>
+          </div>
+
+          {/* User Login Link */}
+          <div className="text-center pt-4">
+            <Link 
+              href="/login"
+              className="text-sm text-slate-500 hover:text-slate-700 transition-colors"
+            >
+              Back to User Login
+            </Link>
           </div>
         </div>
       </div>

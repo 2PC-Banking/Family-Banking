@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from 'react';
-import { SystemStatus } from '@/components/dashboard/SystemStatus';
-import { RecoveryAlertBanner } from '@/components/recovery/RecoveryAlertBanner';
-import { RecoverySummaryCards } from '@/components/recovery/RecoverySummaryCards';
-import { UncertainTransactionsTable } from '@/components/recovery/UncertainTransactionsTable';
-import { RecoveryDetailModal } from '@/components/recovery/RecoveryDetailModal';
-import { RecoveryStrategy } from '@/components/recovery/RecoveryStrategy';
+import { SystemStatus } from '@/components/admin/dashboard/SystemStatus';
+import { RecoveryAlertBanner } from '@/components/admin/recovery/RecoveryAlertBanner';
+import { RecoverySummaryCards } from '@/components/admin/recovery/RecoverySummaryCards';
+import { UncertainTransactionsTable } from '@/components/admin/recovery/UncertainTransactionsTable';
+import { RecoveryDetailModal } from '@/components/admin/recovery/RecoveryDetailModal';
+import { RecoveryStrategy } from '@/components/admin/recovery/RecoveryStrategy';
 import { uncertainTransactions, recoveryTransactionDetails } from '@/lib/mockData';
 
 interface UncertainTransaction {

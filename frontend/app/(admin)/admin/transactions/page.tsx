@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useCallback } from 'react';
-import { SystemStatus } from '@/components/dashboard/SystemStatus';
-import { TransactionHeader } from '@/components/transactions/TransactionHeader';
-import { TransactionTableNew } from '@/components/transactions/TransactionTableNew';
-import { TransactionDetailModal } from '@/components/transactions/TransactionDetailModal';
+import { SystemStatus } from '@/components/admin/dashboard/SystemStatus';
+import { TransactionHeader } from '@/components/admin/transactions/TransactionHeader';
+import { TransactionTableNew } from '@/components/admin/transactions/TransactionTableNew';
+import { TransactionDetailModal } from '@/components/admin/transactions/TransactionDetailModal';
 import { allTransactions } from '@/lib/mockData';
 
 interface Transaction {

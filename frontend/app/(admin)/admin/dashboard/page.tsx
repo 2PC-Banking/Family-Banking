@@ -1,10 +1,10 @@
 'use client';
 
-import { SystemStatus } from '@/components/dashboard/SystemStatus';
-import { StatCards } from '@/components/dashboard/StatCards';
-import { TransactionVolumeChart } from '@/components/dashboard/TransactionVolumeChart';
-import { SuccessRateTrendChart } from '@/components/dashboard/SuccessRateTrendChart';
-import { LinkedBanksStatus } from '@/components/dashboard/LinkedBanksStatus';
+import { SystemStatus } from '@/components/admin/dashboard/SystemStatus';
+import { StatCards } from '@/components/admin/dashboard/StatCards';
+import { TransactionVolumeChart } from '@/components/admin/dashboard/TransactionVolumeChart';
+import { SuccessRateTrendChart } from '@/components/admin/dashboard/SuccessRateTrendChart';
+import { LinkedBanksStatus } from '@/components/admin/dashboard/LinkedBanksStatus';
 import {
   transactionVolumeData,
   successRateTrendData,
