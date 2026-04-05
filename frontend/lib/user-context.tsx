@@ -8,12 +8,23 @@ type UserSession = {
   accountnumber: string;
 };
 
+type PendingTransfer = {
+  fromAccount: string;
+  toAccount: string;
+  recipientName: string;
+  recipientBank: string;
+  amount: number;
+  note: string;
+};
+
 interface UserContextType {
   user: UserSession | null;
   setUser: (user: UserSession | null) => void;
   logout: () => void;
   isLoggedIn: boolean;
   isReady: boolean;
+  pendingTransfer: PendingTransfer | null;
+  setPendingTransfer: (transfer: PendingTransfer | null) => void;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -23,6 +34,7 @@ const STORAGE_KEY = 'family-banking-user';
 export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUserState] = useState<UserSession | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const [pendingTransfer, setPendingTransfer] = useState<PendingTransfer | null>(null);
 
   useEffect(() => {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -56,8 +68,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
       logout,
       isLoggedIn: !!user,
       isReady,
+      pendingTransfer,
+      setPendingTransfer,
     }),
-    [user, isReady]
+    [user, isReady, pendingTransfer]
   );
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;

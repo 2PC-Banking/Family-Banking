@@ -1,10 +1,11 @@
 'use client';
 
+import { api } from '@/lib/api';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useUser } from '@/lib/user-context';
-import { formatCurrency, knownRecipients, bankOptions } from '@/lib/user-mock-data';
+import { formatCurrency, bankOptions } from '@/lib/user-mock-data';
 import {
   ArrowLeft,
   ChevronDown,
@@ -19,7 +20,10 @@ const quickAmounts = [500000, 1000000, 5000000];
 export default function TransferPage() {
   const router = useRouter();
   const { user, setPendingTransfer } = useUser();
-  const defaultAccount = user.accounts.find((acc) => acc.isDefault) || user.accounts[0];
+  if (!user) return null;
+  const defaultAccount = {
+    accountNumber: user.accountnumber,
+  };
 
   const [selectedBank, setSelectedBank] = useState(bankOptions[0]);
   const [showBankDropdown, setShowBankDropdown] = useState(false);
@@ -30,6 +34,7 @@ export default function TransferPage() {
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [balance, setBalance] = useState(0);
 
   // Auto-lookup recipient name
   useEffect(() => {
@@ -37,15 +42,38 @@ export default function TransferPage() {
       setIsVerifying(true);
       setIsVerified(false);
       setRecipientName('');
-      
-      // Simulate API lookup
-      const timeout = setTimeout(() => {
-        const recipient = knownRecipients[accountNumber];
-        if (recipient) {
-          setRecipientName(recipient.name);
-          setIsVerified(true);
-        }
+
+      // CHẶN CHUYỂN CHO CHÍNH MÌNH
+      if (accountNumber === user.accountnumber) {
+        setRecipientName('');
+        setIsVerified(false);
         setIsVerifying(false);
+
+        setErrors((prev) => ({
+          ...prev,
+          recipient: 'Không thể chuyển tiền cho chính tài khoản của bạn',
+        }));
+
+        return;
+      }
+
+      const timeout = setTimeout(async () => {
+        try {
+          const res = await api.getAccountInfo(accountNumber);
+          setRecipientName(res.customerName);
+          setIsVerified(true);
+
+          // clear lỗi nếu trước đó có
+          setErrors((prev) => ({
+            ...prev,
+            recipient: '',
+          }));
+        } catch (err) {
+          setRecipientName('');
+          setIsVerified(false);
+        } finally {
+          setIsVerifying(false);
+        }
       }, 500);
 
       return () => clearTimeout(timeout);
@@ -54,6 +82,21 @@ export default function TransferPage() {
       setIsVerified(false);
     }
   }, [accountNumber]);
+
+  useEffect(() => {
+    if (!user.accountnumber) return;
+
+    const fetchBalance = async () => {
+      try {
+        const res = await api.getBalance(user.accountnumber);
+        setBalance(res.balance);
+      } catch (err) {
+        console.error('Lỗi lấy số dư:', err);
+      }
+    };
+
+    fetchBalance();
+  }, [user]);
 
   const handleAmountChange = (value: string) => {
     // Only allow numbers
@@ -71,13 +114,16 @@ export default function TransferPage() {
     if (!accountNumber || accountNumber.length < 10) {
       newErrors.accountNumber = 'Vui lòng nhập số tài khoản hợp lệ';
     }
+    if (accountNumber === user.accountnumber) {
+      newErrors.recipient = 'Không thể chuyển tiền cho chính tài khoản của bạn';
+    }
     if (!isVerified) {
       newErrors.recipient = 'Không tìm thấy thông tin người nhận';
     }
     if (!amount || parseInt(amount) < 1000) {
       newErrors.amount = 'Số tiền tối thiểu là 1,000 VND';
     }
-    if (parseInt(amount) > defaultAccount.balance) {
+    if (parseInt(amount) > balance) {
       newErrors.amount = 'Số dư không đủ để thực hiện giao dịch';
     }
 
@@ -85,19 +131,25 @@ export default function TransferPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!validateForm()) return;
 
-    setPendingTransfer({
-      fromAccount: defaultAccount.accountNumber,
-      toAccount: accountNumber,
-      recipientName: recipientName,
-      recipientBank: selectedBank.name,
-      amount: parseInt(amount),
-      note: note || 'Chuyen tien',
-    });
+    try {
+      await api.requestOtp(defaultAccount.accountNumber);
 
-    router.push('/user/otp');
+      setPendingTransfer({
+        fromAccount: defaultAccount.accountNumber,
+        toAccount: accountNumber,
+        recipientName: recipientName,
+        recipientBank: selectedBank.name,
+        amount: parseInt(amount),
+        note: note || 'Chuyen tien',
+      });
+
+      router.push('/user/otp');
+    } catch (err) {
+      alert('Không gửi được OTP');
+    }
   };
 
   return (
@@ -128,10 +180,10 @@ export default function TransferPage() {
             <div className="flex items-end justify-between">
               <div>
                 <p className="text-xl font-bold font-mono">{defaultAccount.accountNumber}</p>
-                <p className="text-sm text-blue-200">{defaultAccount.name}</p>
+                <p className="text-sm text-blue-200">{user.name}</p>
               </div>
               <div className="text-right">
-                <p className="text-2xl font-bold">{formatCurrency(defaultAccount.balance)} <span className="text-base text-blue-200">đ</span></p>
+                <p className="text-2xl font-bold">{formatCurrency(balance)} <span className="text-base text-blue-200">đ</span></p>
                 <p className="text-sm text-blue-200">Khả dụng</p>
               </div>
             </div>
@@ -191,7 +243,10 @@ export default function TransferPage() {
                 <input
                   type="text"
                   value={accountNumber}
-                  onChange={(e) => setAccountNumber(e.target.value.replace(/\D/g, ''))}
+                  onChange={(e) => {
+                    setAccountNumber(e.target.value.replace(/\D/g, ''));
+                    setErrors((prev) => ({ ...prev, accountNumber: '', recipient: '' }));
+                  }}
                   placeholder="Nhập số tài khoản người nhận"
                   className="flex-1 outline-none text-slate-900 font-medium placeholder:text-slate-400"
                 />
