@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useUser } from '@/lib/user-context';
-import { formatCurrency, formatDateTime, Transaction } from '@/lib/user-mock-data';
+import { api, TransactionItem } from '@/lib/api';
 import {
   ArrowLeft,
   Search,
@@ -26,7 +27,23 @@ const filterOptions: { value: FilterType; label: string }[] = [
   { value: 'deposit', label: 'Nạp tiền' },
 ];
 
-function getTransactionIcon(type: Transaction['type']) {
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat('vi-VN').format(Math.abs(value));
+}
+
+function formatDateTime(value: string) {
+  return new Date(value).toLocaleString('vi-VN');
+}
+
+function mapBackendType(type: string): FilterType {
+  if (type === 'ChuyenTien') return 'transfer_out';
+  if (type === 'NhanTien') return 'transfer_in';
+  if (type === 'ThanhToanHoaDon') return 'bill_payment';
+  if (type === 'NapTien') return 'deposit';
+  return 'all';
+}
+
+function getTransactionIcon(type: FilterType) {
   switch (type) {
     case 'transfer_out':
       return { icon: ArrowUpRight, bg: 'bg-blue-100', color: 'text-blue-600' };
@@ -41,67 +58,109 @@ function getTransactionIcon(type: Transaction['type']) {
   }
 }
 
-function getTransactionTitle(tx: Transaction) {
-  switch (tx.type) {
+function getTransactionTitle(tx: TransactionItem) {
+  const mappedType = mapBackendType(tx.type);
+
+  switch (mappedType) {
     case 'transfer_out':
-      return `Chuyển đến: ${tx.recipientAccount}`;
+      return `Chuyển đến: ${tx.relatedaccount || '---'}`;
     case 'transfer_in':
-      return `Nhận từ: ${tx.senderAccount}`;
+      return `Nhận từ: ${tx.relatedaccount || '---'}`;
     case 'bill_payment':
-      return `Thanh toán: ${tx.recipientName}`;
+      return `Thanh toán hóa đơn`;
     case 'deposit':
       return 'Nạp tiền vào tài khoản';
     default:
-      return tx.description;
+      return tx.type || 'Giao dịch';
+  }
+}
+
+function getTransactionDescription(tx: TransactionItem) {
+  const mappedType = mapBackendType(tx.type);
+
+  switch (mappedType) {
+    case 'transfer_out':
+      return 'Chuyển tiền';
+    case 'transfer_in':
+      return 'Nhận tiền';
+    case 'bill_payment':
+      return 'Thanh toán hóa đơn';
+    case 'deposit':
+      return 'Nạp tiền';
+    default:
+      return tx.type || 'Giao dịch';
   }
 }
 
 export default function HistoryPage() {
-  const { transactions } = useUser();
+  const router = useRouter();
+  const { user, isReady } = useUser();
+
+  const [transactions, setTransactions] = useState<TransactionItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [showFilters, setShowFilters] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!isReady) return;
+
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+
+    const loadHistory = async () => {
+      try {
+        setLoading(true);
+        setError('');
+        const data = await api.getHistory(user.accountnumber);
+        setTransactions(data);
+      } catch (err) {
+        console.error('History error:', err);
+        setError(err instanceof Error ? err.message : 'Không tải được lịch sử giao dịch');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadHistory();
+  }, [user, isReady, router]);
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter((tx) => {
-      // Filter by type
-      if (activeFilter !== 'all' && tx.type !== activeFilter) {
+      const mappedType = mapBackendType(tx.type);
+
+      if (activeFilter !== 'all' && mappedType !== activeFilter) {
         return false;
       }
 
-      // Filter by search query
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         const searchableFields = [
-          tx.id,
-          tx.recipientAccount,
-          tx.recipientName,
-          tx.senderAccount,
-          tx.senderName,
-          tx.note,
-          tx.description,
+          tx.transactionid,
+          tx.relatedaccount,
+          tx.type,
         ].filter(Boolean);
-        
-        return searchableFields.some((field) => 
-          field?.toLowerCase().includes(query)
-        );
+
+        return searchableFields.some((field) => field?.toLowerCase().includes(query));
       }
 
       return true;
     });
   }, [transactions, activeFilter, searchQuery]);
 
-  // Group transactions by date
   const groupedTransactions = useMemo(() => {
-    const groups: Record<string, Transaction[]> = {};
-    
+    const groups: Record<string, TransactionItem[]> = {};
+
     filteredTransactions.forEach((tx) => {
       const date = new Date(tx.timestamp).toLocaleDateString('vi-VN', {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
       });
-      
+
       if (!groups[date]) {
         groups[date] = [];
       }
@@ -111,16 +170,20 @@ export default function HistoryPage() {
     return groups;
   }, [filteredTransactions]);
 
-  // Calculate summary
   const summary = useMemo(() => {
     const totalIn = filteredTransactions
-      .filter(tx => tx.amount > 0)
+      .filter((tx) => tx.amount > 0)
       .reduce((sum, tx) => sum + tx.amount, 0);
+
     const totalOut = filteredTransactions
-      .filter(tx => tx.amount < 0)
+      .filter((tx) => tx.amount < 0)
       .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+
     return { totalIn, totalOut, count: filteredTransactions.length };
   }, [filteredTransactions]);
+
+  if (!isReady) return null;
+  if (!user) return null;
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-slate-50">
@@ -150,6 +213,12 @@ export default function HistoryPage() {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {error && (
+          <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+            {error}
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Left Sidebar - Filters & Summary */}
           <div className="lg:col-span-1 space-y-6">
@@ -199,11 +268,11 @@ export default function HistoryPage() {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-slate-500">Tổng nhận</span>
-                  <span className="font-bold text-emerald-600">+{formatCurrency(summary.totalIn)} đ</span>
+                  <span className="font-bold text-emerald-600">{formatCurrency(summary.totalIn)} đ</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-slate-500">Tổng chi</span>
-                  <span className="font-bold text-slate-900">-{formatCurrency(summary.totalOut)} đ</span>
+                  <span className="font-bold text-slate-900">{formatCurrency(summary.totalOut)} đ</span>
                 </div>
               </div>
             </div>
@@ -229,50 +298,51 @@ export default function HistoryPage() {
             </div>
 
             {/* Transactions List */}
-            {Object.keys(groupedTransactions).length > 0 ? (
+            {loading ? (
+              <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-500">
+                Đang tải lịch sử giao dịch...
+              </div>
+            ) : Object.keys(groupedTransactions).length > 0 ? (
               <div className="space-y-6">
                 {Object.entries(groupedTransactions).map(([date, txs]) => (
                   <div key={date}>
                     <div className="flex items-center gap-2 mb-3">
                       <Calendar className="w-4 h-4 text-slate-400" />
-                      <h3 className="text-sm font-semibold text-slate-500">
-                        {date}
-                      </h3>
+                      <h3 className="text-sm font-semibold text-slate-500">{date}</h3>
                     </div>
+
                     <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden divide-y divide-slate-100">
                       {txs.map((tx) => {
-                        const iconConfig = getTransactionIcon(tx.type);
+                        const mappedType = mapBackendType(tx.type);
+                        const iconConfig = getTransactionIcon(mappedType);
                         const Icon = iconConfig.icon;
-                        
+
                         return (
                           <Link
-                            key={tx.id}
-                            href={`/user/history/${tx.id}`}
+                            key={tx.transactionid}
+                            href={`/user/history/${tx.transactionid}`}
                             className="flex items-center gap-4 p-4 hover:bg-slate-50 transition-colors"
                           >
                             <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${iconConfig.bg}`}>
                               <Icon className={`w-5 h-5 ${iconConfig.color}`} />
                             </div>
+
                             <div className="flex-1 min-w-0">
                               <p className="font-medium text-slate-900 truncate">
                                 {getTransactionTitle(tx)}
                               </p>
                               <p className="text-sm text-slate-500 truncate">
-                                {tx.description} - {formatDateTime(tx.timestamp)}
+                                {getTransactionDescription(tx)} - {formatDateTime(tx.timestamp)}
                               </p>
                             </div>
+
                             <div className="text-right flex-shrink-0">
                               <p className={`font-bold ${tx.amount > 0 ? 'text-emerald-600' : 'text-slate-900'}`}>
-                                {tx.amount > 0 ? '+' : ''}{formatCurrency(tx.amount)} đ
+                                {tx.amount > 0 ? '+' : '-'}
+                                {formatCurrency(tx.amount)} đ
                               </p>
-                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                                tx.status === 'success'
-                                  ? 'bg-emerald-100 text-emerald-700'
-                                  : tx.status === 'pending'
-                                  ? 'bg-amber-100 text-amber-700'
-                                  : 'bg-red-100 text-red-700'
-                              }`}>
-                                {tx.status === 'success' ? 'Thành công' : tx.status === 'pending' ? 'Đang xử lý' : 'Thất bại'}
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
+                                Thành công
                               </span>
                             </div>
                           </Link>
