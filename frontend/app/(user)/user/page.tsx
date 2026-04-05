@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@/lib/user-context';
-import { api, BalanceResponse, TransactionItem } from '@/lib/api';
+import { api, TransactionItem } from '@/lib/api';
 import {
   Eye,
   EyeOff,
@@ -38,7 +38,7 @@ export default function UserDashboard() {
 
   const [showBalance, setShowBalance] = useState(true);
   const [copied, setCopied] = useState(false);
-  const [balanceData, setBalanceData] = useState<BalanceResponse | null>(null);
+  const [balance, setBalance] = useState(0);
   const [transactions, setTransactions] = useState<TransactionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -50,6 +50,7 @@ export default function UserDashboard() {
       router.push('/login');
       return;
     }
+    
 
     const loadDashboardData = async () => {
       try {
@@ -61,7 +62,9 @@ export default function UserDashboard() {
           api.getHistory(user.accountnumber),
         ]);
 
-        setBalanceData(balanceRes);
+        console.log('balanceRes:', balanceRes);
+
+        setBalance(balanceRes.balance);
         setTransactions(historyRes);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Không tải được dữ liệu dashboard');
@@ -71,7 +74,7 @@ export default function UserDashboard() {
     };
 
     loadDashboardData();
-  }, [user, router]);
+  }, [user, isReady, router]);
 
   const recentTransactions = useMemo(() => transactions.slice(0, 4), [transactions]);
 
@@ -99,7 +102,7 @@ export default function UserDashboard() {
     { icon: Headphones, label: 'Hỗ trợ 24/7', href: '#', comingSoon: true },
   ];
 
-  const displayedBalance = balanceData?.balance ?? 0;
+  const displayedBalance = balance;
 
   if (!isReady) return null;
   if (!user) return null;
