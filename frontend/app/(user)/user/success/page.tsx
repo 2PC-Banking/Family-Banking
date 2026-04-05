@@ -22,12 +22,6 @@ export default function SuccessPage() {
   const { lastCompletedTransfer } = useUser();
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
-  // Redirect if no completed transfer
-  useEffect(() => {
-    if (!lastCompletedTransfer) {
-      router.replace('/user');
-    }
-  }, [lastCompletedTransfer, router]);
 
   const handleCopy = (text: string, field: string) => {
     navigator.clipboard.writeText(text);
