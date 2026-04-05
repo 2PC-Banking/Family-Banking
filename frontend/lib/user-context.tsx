@@ -13,6 +13,7 @@ interface UserContextType {
   setUser: (user: UserSession | null) => void;
   logout: () => void;
   isLoggedIn: boolean;
+  isReady: boolean;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -21,8 +22,8 @@ const STORAGE_KEY = 'family-banking-user';
 
 export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUserState] = useState<UserSession | null>(null);
+  const [isReady, setIsReady] = useState(false);
 
-  // Load từ localStorage khi reload
   useEffect(() => {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
@@ -32,6 +33,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem(STORAGE_KEY);
       }
     }
+    setIsReady(true);
   }, []);
 
   const setUser = (value: UserSession | null) => {
@@ -53,8 +55,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
       setUser,
       logout,
       isLoggedIn: !!user,
+      isReady,
     }),
-    [user]
+    [user, isReady]
   );
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;

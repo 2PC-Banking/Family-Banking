@@ -4,15 +4,13 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
-
-// Mock credentials for demo
-const DEMO_CREDENTIALS = {
-  accountNumber: '0900000000',
-  password: '123456',
-};
+import { api } from '@/lib/api';
+import { useUser } from '@/lib/user-context';
 
 export default function UserLoginPage() {
   const router = useRouter();
+  const { setUser } = useUser();
+
   const [accountNumber, setAccountNumber] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -26,17 +24,17 @@ export default function UserLoginPage() {
     setIsLoading(true);
 
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Mock authentication check
-      if (accountNumber === DEMO_CREDENTIALS.accountNumber && password === DEMO_CREDENTIALS.password) {
-        router.push('/user');
-      } else {
-        setError('Số tài khoản hoặc mật khẩu không đúng. Thử: 0900000000 / 123456');
-      }
-    } catch {
-      setError('Đã xảy ra lỗi. Vui lòng thử lại.');
+      const res = await api.login(accountNumber, password);
+
+      setUser({
+        customerId: res.customerId,
+        name: res.name,
+        accountnumber: res.accountnumber,
+      });
+
+      router.push('/user');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Đã xảy ra lỗi. Vui lòng thử lại.');
     } finally {
       setIsLoading(false);
     }
@@ -44,7 +42,6 @@ export default function UserLoginPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-slate-50 to-blue-100 flex items-center justify-center p-4">
-      {/* Left side - Illustration area */}
       <div className="hidden lg:flex lg:w-1/2 items-center justify-center">
         <div className="relative w-96 h-96">
           <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-blue-600 rounded-3xl transform -rotate-6 opacity-20" />
@@ -61,34 +58,29 @@ export default function UserLoginPage() {
         </div>
       </div>
 
-      {/* Right side - Login form */}
       <div className="w-full lg:w-1/2 max-w-md">
         <div className="bg-white rounded-2xl shadow-2xl p-8 space-y-8">
-          {/* Header */}
           <div className="text-center space-y-2">
             <h1 className="text-3xl font-bold text-slate-900">Chào mừng trở lại</h1>
             <p className="text-slate-600 font-medium">Đăng nhập vào tài khoản của bạn</p>
           </div>
 
-          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Account Number */}
             <div>
               <label htmlFor="accountNumber" className="block text-sm font-semibold text-slate-900 mb-2">
-                Số tài khoản / Số điện thoại
+                Tên đăng nhập
               </label>
               <input
                 id="accountNumber"
                 type="text"
                 value={accountNumber}
                 onChange={(e) => setAccountNumber(e.target.value)}
-                placeholder="Nhập số tài khoản hoặc số điện thoại"
+                placeholder="Nhập số điện thoại"
                 className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 required
               />
             </div>
 
-            {/* Password */}
             <div>
               <label htmlFor="password" className="block text-sm font-semibold text-slate-900 mb-2">
                 Mật khẩu
@@ -113,14 +105,12 @@ export default function UserLoginPage() {
               </div>
             </div>
 
-            {/* Error Message */}
             {error && (
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
                 <p className="text-sm text-amber-700 font-medium">{error}</p>
               </div>
             )}
 
-            {/* Remember & Forgot */}
             <div className="flex items-center justify-between">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -136,7 +126,6 @@ export default function UserLoginPage() {
               </a>
             </div>
 
-            {/* Sign In Button */}
             <button
               type="submit"
               disabled={isLoading}
@@ -146,19 +135,17 @@ export default function UserLoginPage() {
             </button>
           </form>
 
-          {/* Register Link */}
           <div className="text-center text-sm text-slate-600">
             <p>
-              {"Chưa có tài khoản? "}
+              {'Chưa có tài khoản? '}
               <a href="#" className="text-blue-600 hover:text-blue-700 font-semibold transition-colors">
                 Đăng ký ngay
               </a>
             </p>
           </div>
 
-          {/* Admin Login Link */}
           <div className="text-center pt-4 border-t border-slate-200">
-            <Link 
+            <Link
               href="/admin/login"
               className="text-sm text-slate-500 hover:text-slate-700 transition-colors"
             >

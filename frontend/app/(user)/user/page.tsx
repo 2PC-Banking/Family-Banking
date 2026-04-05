@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useUser } from '@/lib/user-context';
-import { formatCurrency, formatDateTime } from '@/lib/user-mock-data';
+import { api, BalanceResponse, TransactionItem } from '@/lib/api';
 import {
   Eye,
   EyeOff,
@@ -23,19 +24,65 @@ import {
   ChevronRight,
 } from 'lucide-react';
 
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat('vi-VN').format(Math.abs(value));
+}
+
+function formatDateTime(value: string) {
+  return new Date(value).toLocaleString('vi-VN');
+}
+
 export default function UserDashboard() {
-  const { user, transactions } = useUser();
+  const router = useRouter();
+  const { user, isReady } = useUser();
+
   const [showBalance, setShowBalance] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [balanceData, setBalanceData] = useState<BalanceResponse | null>(null);
+  const [transactions, setTransactions] = useState<TransactionItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const defaultAccount = user.accounts.find((acc) => acc.isDefault) || user.accounts[0];
-  const recentTransactions = transactions.slice(0, 4);
+  useEffect(() => {
+    if (!isReady) return;
 
-  const handleCopyAccount = () => {
-    navigator.clipboard.writeText(defaultAccount.accountNumber);
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+
+    const loadDashboardData = async () => {
+      try {
+        setLoading(true);
+        setError('');
+
+        const [balanceRes, historyRes] = await Promise.all([
+          api.getBalance(user.accountnumber),
+          api.getHistory(user.accountnumber),
+        ]);
+
+        setBalanceData(balanceRes);
+        setTransactions(historyRes);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Không tải được dữ liệu dashboard');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDashboardData();
+  }, [user, router]);
+
+  const recentTransactions = useMemo(() => transactions.slice(0, 4), [transactions]);
+
+  const handleCopyAccount = async () => {
+    if (!user) return;
+    await navigator.clipboard.writeText(user.accountnumber);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  if (!user) return null;
 
   const quickActions = [
     { icon: Send, label: 'Chuyển tiền', href: '/user/transfer', color: 'bg-blue-100 text-blue-600' },
@@ -52,19 +99,27 @@ export default function UserDashboard() {
     { icon: Headphones, label: 'Hỗ trợ 24/7', href: '#', comingSoon: true },
   ];
 
+  const displayedBalance = balanceData?.balance ?? 0;
+
+  if (!isReady) return null;
+  if (!user) return null;
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      {error && (
+        <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+          {error}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Main Content */}
         <div className="lg:col-span-2 space-y-6">
           {/* Welcome & Account Card */}
           <div className="bg-gradient-to-br from-[#1a365d] to-[#2d4a7c] rounded-2xl p-6 text-white relative overflow-hidden">
-            {/* Background decoration */}
             <div className="absolute right-0 top-0 w-48 h-48 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
             <div className="absolute right-12 bottom-0 w-32 h-32 bg-white/5 rounded-full translate-y-1/2" />
-            
+
             <div className="relative z-10">
-              {/* Greeting */}
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <p className="text-blue-200 text-sm">Xin chào,</p>
@@ -78,22 +133,20 @@ export default function UserDashboard() {
                 </button>
               </div>
 
-              {/* Balance */}
               <div className="mb-6">
                 <p className="text-blue-200 text-sm mb-1">Số dư khả dụng</p>
                 <div className="flex items-baseline gap-2">
                   <span className="text-3xl font-bold">
-                    {showBalance ? formatCurrency(defaultAccount.balance) : '••••••••'}
+                    {loading ? 'Đang tải...' : showBalance ? formatCurrency(displayedBalance) : '••••••••'}
                   </span>
-                  <span className="text-blue-200">VND</span>
+                  {!loading && <span className="text-blue-200">VND</span>}
                 </div>
               </div>
 
-              {/* Account Number */}
               <div className="flex items-center justify-between bg-white/10 rounded-xl p-4">
                 <div>
                   <p className="text-blue-200 text-xs mb-1">SỐ TÀI KHOẢN</p>
-                  <p className="font-mono text-lg font-semibold">{defaultAccount.accountNumber}</p>
+                  <p className="font-mono text-lg font-semibold">{user.accountnumber}</p>
                 </div>
                 <button
                   onClick={handleCopyAccount}
@@ -104,7 +157,6 @@ export default function UserDashboard() {
                 </button>
               </div>
 
-              {/* History Link */}
               <Link
                 href="/user/history"
                 className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-medium transition-colors"
@@ -123,7 +175,7 @@ export default function UserDashboard() {
                 Tất cả
               </Link>
             </div>
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {quickActions.map((action) => (
                 <Link
                   key={action.label}
@@ -135,9 +187,7 @@ export default function UserDashboard() {
                     <action.icon className="w-6 h-6" />
                   </div>
                   <span className="text-sm font-medium text-slate-700 text-center">{action.label}</span>
-                  {action.comingSoon && (
-                    <span className="text-xs text-slate-400">Đang phát triển</span>
-                  )}
+                  {action.comingSoon && <span className="text-xs text-slate-400">Đang phát triển</span>}
                 </Link>
               ))}
             </div>
@@ -155,52 +205,62 @@ export default function UserDashboard() {
                 <ChevronRight className="w-4 h-4" />
               </Link>
             </div>
-            <div className="divide-y divide-slate-100">
-              {recentTransactions.map((tx) => (
-                <Link
-                  key={tx.id}
-                  href={`/user/history/${tx.id}`}
-                  className="flex items-center gap-4 p-4 hover:bg-slate-50 transition-colors"
-                >
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                    tx.amount > 0 ? 'bg-emerald-100' : 'bg-blue-100'
-                  }`}>
-                    {tx.amount > 0 ? (
-                      <ArrowDownLeft className="w-5 h-5 text-emerald-600" />
-                    ) : (
-                      <ArrowUpRight className="w-5 h-5 text-blue-600" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-slate-900 truncate">
-                      {tx.amount > 0 
-                        ? `Nhận từ: ${tx.senderAccount}`
-                        : `Chuyển đến: ${tx.recipientAccount}`
-                      }
-                    </p>
-                    <p className="text-sm text-slate-500 truncate">
-                      {tx.id} • {formatDateTime(tx.timestamp)}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className={`font-bold ${tx.amount > 0 ? 'text-emerald-600' : 'text-slate-900'}`}>
-                      {tx.amount > 0 ? '+' : ''}{formatCurrency(tx.amount)} đ
-                    </p>
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
-                      Thành công
-                    </span>
-                  </div>
-                </Link>
-              ))}
-            </div>
+
+            {loading ? (
+              <div className="p-4 text-sm text-slate-500">Đang tải giao dịch...</div>
+            ) : recentTransactions.length === 0 ? (
+              <div className="p-4 text-sm text-slate-500">Chưa có giao dịch nào.</div>
+            ) : (
+              <div className="divide-y divide-slate-100">
+                {recentTransactions.map((tx) => (
+                  <Link
+                    key={tx.transactionid}
+                    href={`/user/history/${tx.transactionid}`}
+                    className="flex items-center gap-4 p-4 hover:bg-slate-50 transition-colors"
+                  >
+                    <div
+                      className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                        tx.amount > 0 ? 'bg-emerald-100' : 'bg-blue-100'
+                      }`}
+                    >
+                      {tx.amount > 0 ? (
+                        <ArrowDownLeft className="w-5 h-5 text-emerald-600" />
+                      ) : (
+                        <ArrowUpRight className="w-5 h-5 text-blue-600" />
+                      )}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-slate-900 truncate">
+                        {tx.amount > 0
+                          ? `Nhận từ: ${tx.relatedaccount || '---'}`
+                          : `Chuyển đến: ${tx.relatedaccount || '---'}`}
+                      </p>
+                      <p className="text-sm text-slate-500 truncate">
+                        {tx.transactionid} • {formatDateTime(tx.timestamp)}
+                      </p>
+                    </div>
+
+                    <div className="text-right">
+                      <p className={`font-bold ${tx.amount > 0 ? 'text-emerald-600' : 'text-slate-900'}`}>
+                        {tx.amount > 0 ? '+' : '-'}
+                        {formatCurrency(tx.amount)} đ
+                      </p>
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
+                        Thành công
+                      </span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
         {/* Right Column - Extra Features */}
         <div className="space-y-6">
-          {/* Points Card */}
           <div className="bg-white rounded-2xl border border-slate-200 p-4">
-            <Link href="#" className="flex items-center gap-4 group">
+            <Link href="#" className="flex items-center gap-4 group" onClick={(e) => e.preventDefault()}>
               <div className="w-14 h-14 bg-amber-100 rounded-xl flex items-center justify-center">
                 <Gift className="w-7 h-7 text-amber-600" />
               </div>
@@ -214,7 +274,6 @@ export default function UserDashboard() {
             </Link>
           </div>
 
-          {/* Extra Features Grid */}
           <div className="bg-white rounded-2xl border border-slate-200 p-4">
             <h3 className="font-bold text-slate-900 mb-4">Tiện ích khác</h3>
             <div className="grid grid-cols-2 gap-3">
@@ -229,15 +288,12 @@ export default function UserDashboard() {
                     <feature.icon className="w-5 h-5 text-[#1a365d]" />
                   </div>
                   <span className="text-xs font-medium text-slate-700 text-center">{feature.label}</span>
-                  {feature.comingSoon && (
-                    <span className="text-xs text-slate-400">Sắp ra mắt</span>
-                  )}
+                  {feature.comingSoon && <span className="text-xs text-slate-400">Sắp ra mắt</span>}
                 </Link>
               ))}
             </div>
           </div>
 
-          {/* Support Card */}
           <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-5 text-white">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
