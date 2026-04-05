@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from 'react';
-import { SystemStatus } from '@/components/dashboard/SystemStatus';
-import { TwoPhaseCommitHeader } from '@/components/2pc-monitor/TwoPhaseCommitHeader';
-import { TwoPhaseCommitTable } from '@/components/2pc-monitor/TwoPhaseCommitTable';
-import { TwoPhaseCommitDetailModal } from '@/components/2pc-monitor/TwoPhaseCommitDetailModal';
+import { SystemStatus } from '@/components/admin/dashboard/SystemStatus';
+import { TwoPhaseCommitHeader } from '@/components/admin/2pc-monitor/TwoPhaseCommitHeader';
+import { TwoPhaseCommitTable } from '@/components/admin/2pc-monitor/TwoPhaseCommitTable';
+import { TwoPhaseCommitDetailModal } from '@/components/admin/2pc-monitor/TwoPhaseCommitDetailModal';
 import { twoPhaseCommitTransactions } from '@/lib/mockData';
 
 interface TwoPhaseCommitTransaction {

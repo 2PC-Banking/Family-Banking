@@ -15,15 +15,15 @@ import { useAuth } from '@/lib/auth-context';
 import { cn } from '@/lib/utils';
 
 const navigationItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/transactions', label: 'Transactions', icon: Send },
-  { href: '/2pc-monitor', label: '2PC Monitor', icon: Shield },
-  { href: '/recovery', label: 'Recovery', icon: Undo2 },
-  { href: '/logs', label: 'Logs', icon: FileText },
-  { href: '/settings', label: 'Settings', icon: Settings },
+  { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/admin/transactions', label: 'Transactions', icon: Send },
+  { href: '/admin/2pc-monitor', label: '2PC Monitor', icon: Shield },
+  { href: '/admin/recovery', label: 'Recovery', icon: Undo2 },
+  { href: '/admin/logs', label: 'Logs', icon: FileText },
+  { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 
-export function Sidebar() {
+export function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { logout, adminName } = useAuth();
@@ -34,7 +34,7 @@ export function Sidebar() {
 
   const handleLogout = () => {
     logout();
-    router.push('/login');
+    router.push('/admin/login');
   };
 
   return (
@@ -71,7 +71,7 @@ export function Sidebar() {
       <nav className="flex-1 px-4 py-6 space-y-2">
         {navigationItems.map((item) => {
           const Icon = item.icon;
-          const isActive = pathname === item.href;
+          const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
           return (
             <button
               key={item.href}
