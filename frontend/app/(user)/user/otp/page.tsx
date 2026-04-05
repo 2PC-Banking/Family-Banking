@@ -2,17 +2,19 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { useUser } from '@/lib/user-context';
 import { api } from '@/lib/api';
-import { ArrowLeft, Smartphone, Clock, RefreshCw } from 'lucide-react';
 
 const OTP_LENGTH = 6;
 const COUNTDOWN_SECONDS = 120;
 
 export default function OTPPage() {
   const router = useRouter();
-  const { pendingTransfer, user } = useUser();
+  const {
+    pendingTransfer,
+    user,
+    setLastCompletedTransfer,
+  } = useUser();
 
   const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(''));
   const [error, setError] = useState('');
@@ -21,26 +23,22 @@ export default function OTPPage() {
   const [canResend, setCanResend] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // ❗ FIX: dùng accountnumber từ BE (không dùng accounts nữa)
   const maskedAccount = user?.accountnumber
     ? `TK ${user.accountnumber.slice(0, 4)}****${user.accountnumber.slice(-2)}`
     : '';
 
-  // ❗ redirect nếu không có data
   useEffect(() => {
     if (!pendingTransfer && !isVerifying) {
       router.replace('/user');
     }
-  }, [pendingTransfer, isVerifying]);
+  }, [pendingTransfer, isVerifying, router]);
 
-  // countdown
   useEffect(() => {
     if (countdown > 0) {
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
       return () => clearTimeout(timer);
-    } else {
-      setCanResend(true);
     }
+    setCanResend(true);
   }, [countdown]);
 
   const formatCountdown = (seconds: number) => {
@@ -62,6 +60,7 @@ export default function OTPPage() {
         }
       });
       setOtp(newOtp);
+      setError('');
       return;
     }
 
@@ -82,7 +81,7 @@ export default function OTPPage() {
 
   const handleResend = async () => {
     try {
-      if (!user || !pendingTransfer) return null;
+      if (!user) return;
       await api.requestOtp(user.accountnumber);
       setCountdown(COUNTDOWN_SECONDS);
       setCanResend(false);
@@ -108,7 +107,7 @@ export default function OTPPage() {
       setIsVerifying(true);
       setError('');
 
-      await api.transfer({
+      const res = await api.transfer({
         fromAccount: pendingTransfer.fromAccount,
         toAccount: pendingTransfer.toAccount,
         amount: pendingTransfer.amount,
@@ -116,13 +115,15 @@ export default function OTPPage() {
         otpCode: otpValue,
       });
 
-      // ✅ QUAN TRỌNG: delay để tránh unmount sớm
-      setTimeout(() => {
-        router.push('/user/success');
-      }, 300);
+      setLastCompletedTransfer({
+        ...pendingTransfer,
+        id: String(res.transactionId),
+        timestamp: res.timestamp || new Date().toISOString(),
+      });
 
+      router.push('/user/success');
     } catch (err: any) {
-      setError(err.message || 'OTP không đúng');
+      setError(err?.message || 'OTP không đúng');
       setOtp(Array(OTP_LENGTH).fill(''));
       inputRefs.current[0]?.focus();
     } finally {
@@ -130,11 +131,11 @@ export default function OTPPage() {
     }
   };
 
-  // auto submit khi nhập đủ
   useEffect(() => {
     if (otp.every((d) => d !== '') && !isVerifying) {
       handleVerify();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [otp]);
 
   if (!pendingTransfer && !isVerifying) return null;
@@ -144,7 +145,6 @@ export default function OTPPage() {
       <div className="flex-1 flex items-center justify-center px-4 py-8">
         <div className="w-full max-w-md">
           <div className="bg-white rounded-2xl border border-slate-200 p-8">
-
             <div className="text-center mb-6">
               <h2 className="text-xl font-bold">Nhập OTP</h2>
               <p className="text-sm text-slate-500">{maskedAccount}</p>

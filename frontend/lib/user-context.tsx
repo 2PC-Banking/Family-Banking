@@ -17,14 +17,24 @@ type PendingTransfer = {
   note: string;
 };
 
+type CompletedTransfer = PendingTransfer & {
+  id: string;
+  timestamp: string;
+};
+
 interface UserContextType {
   user: UserSession | null;
   setUser: (user: UserSession | null) => void;
   logout: () => void;
   isLoggedIn: boolean;
   isReady: boolean;
+
   pendingTransfer: PendingTransfer | null;
   setPendingTransfer: (transfer: PendingTransfer | null) => void;
+
+  // ✅ THÊM
+  lastCompletedTransfer: CompletedTransfer | null;
+  setLastCompletedTransfer: (data: CompletedTransfer | null) => void;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -35,6 +45,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUserState] = useState<UserSession | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [pendingTransfer, setPendingTransfer] = useState<PendingTransfer | null>(null);
+
+  // ✅ THÊM
+  const [lastCompletedTransfer, setLastCompletedTransfer] = useState<CompletedTransfer | null>(null);
 
   useEffect(() => {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -70,8 +83,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
       isReady,
       pendingTransfer,
       setPendingTransfer,
+
+      // ✅ THÊM
+      lastCompletedTransfer,
+      setLastCompletedTransfer,
     }),
-    [user, isReady, pendingTransfer]
+    [user, isReady, pendingTransfer, lastCompletedTransfer]
   );
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
