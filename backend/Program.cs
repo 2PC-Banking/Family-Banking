@@ -8,7 +8,8 @@ builder.Services.AddMemoryCache();
 // 1. SERVICES
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(); // Đã cài package ở Bước 1 nên hết lỗi ở đây
+builder.Services.AddSwaggerGen();
+builder.Services.AddHttpClient("BankB"); // HttpClient để Coordinator gọi Bank B
 builder.WebHost.UseUrls("http://*:5288"); // Cấu hình để chạy trên cổng 5288, bind tất cả IP
 
 builder.Services.AddDbContext<BankDbContext>(options =>

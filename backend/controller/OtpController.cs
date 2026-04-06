@@ -30,7 +30,8 @@ namespace backend.controller
             Console.WriteLine($"Nội dung: Ma OTP xac thuc chuyen tien cua ban la {otpCode}. Hieu luc trong 2 phut.");
             Console.WriteLine("=======================================\n");
 
-            return Ok(new { message = "Đã gửi mã OTP thành công" });
+            // 4. Trả OTP trong response để dễ test (DEV ONLY)
+            return Ok(new { message = "Đã gửi mã OTP thành công", otp_code = otpCode });
         }
     }
 

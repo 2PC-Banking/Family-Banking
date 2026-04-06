@@ -1,4 +1,6 @@
 using System;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace backend.models
 {
@@ -45,5 +47,20 @@ namespace backend.models
         public string? type { get; set; } = "";
         public string? relatedaccount { get; set; } = "";
         public decimal postbalance { get; set; }
+    }
+
+    // ========== 2PC Transaction Journal ==========
+    // Bảng lưu trạng thái local của mỗi global transaction (2PC participant state machine)
+    public class TransactionJournal
+    {
+        [Key]
+        public string transaction_id { get; set; } = "";   // ID duy nhất từ Coordinator
+        public string phase_status { get; set; } = "INIT"; // INIT | PREPARED | COMMITTED | ABORTED
+        public string operation { get; set; } = "";        // DEBIT | CREDIT
+        public string account_id { get; set; } = "";       // accountnumber liên quan
+        public decimal amount { get; set; }                // Số tiền
+        public string? last_error { get; set; }            // Lưu lỗi cuối nếu có
+        public DateTime created_at { get; set; } = DateTime.UtcNow;
+        public DateTime updated_at { get; set; } = DateTime.UtcNow;
     }
 }

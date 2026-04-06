@@ -13,6 +13,7 @@ namespace backend.Data
         public DbSet<Customer> Customers { get; set; }
         public DbSet<Account> Accounts { get; set; }
         public DbSet<Transaction> Transactions { get; set; }
+        public DbSet<TransactionJournal> TransactionJournals { get; set; } // 2PC Journal
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -25,6 +26,7 @@ namespace backend.Data
             modelBuilder.Entity<Customer>().ToTable("customer");
             modelBuilder.Entity<Account>().ToTable("account");
             modelBuilder.Entity<Transaction>().ToTable("transaction");
+            modelBuilder.Entity<TransactionJournal>().ToTable("transaction_journal");
 
             // 2. Chỉ định Khóa chính (Primary Key)
             modelBuilder.Entity<Bank>().HasKey(b => b.bankcode);
