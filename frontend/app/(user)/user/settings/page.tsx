@@ -23,7 +23,10 @@ import {
 export default function SettingsPage() {
   const { user } = useUser();
   const [showAccountNumber, setShowAccountNumber] = useState(false);
-  const defaultAccount = user.accounts.find((acc) => acc.isDefault) || user.accounts[0];
+  const accountNumber = user?.accountnumber ?? '';
+  const maskedAccountNumber = accountNumber
+    ? `${accountNumber.slice(0, 4)}****${accountNumber.slice(-2)}`
+    : 'Chưa có tài khoản';
 
   const settingsSections = [
     {
@@ -137,12 +140,13 @@ export default function SettingsPage() {
               <div className="flex flex-col items-center text-center">
                 <div className="w-20 h-20 bg-gradient-to-br from-[#1a365d] to-[#2d4a7c] rounded-full flex items-center justify-center mb-4">
                   <span className="text-white font-bold text-2xl">
-                    {user.name.charAt(0)}
+                    {user?.name.charAt(0) ?? '?'}
                   </span>
                 </div>
-                <h2 className="text-xl font-bold text-slate-900 mb-1">{user.name}</h2>
-                <p className="text-sm text-slate-500">ID: {user.id}</p>
-                <p className="text-sm text-slate-500">{user.phone}</p>
+                <h2 className="text-xl font-bold text-slate-900 mb-1">
+                  {user?.name ?? 'Chưa đăng nhập'}
+                </h2>
+                <p className="text-sm text-slate-500">ID: {user?.customerId ?? 'N/A'}</p>
               </div>
 
               {/* Account Info */}
@@ -153,8 +157,8 @@ export default function SettingsPage() {
                     <div className="flex items-center gap-2">
                       <span className="font-mono font-bold text-[#1a365d]">
                         {showAccountNumber 
-                          ? defaultAccount.accountNumber 
-                          : `${defaultAccount.accountNumber.slice(0, 4)}****${defaultAccount.accountNumber.slice(-2)}`
+                          ? accountNumber || 'Chưa có tài khoản'
+                          : maskedAccountNumber
                         }
                       </span>
                     </div>
