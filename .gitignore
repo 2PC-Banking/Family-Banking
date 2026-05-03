@@ -1,12 +1,13 @@
 # Dependencies
 node_modules/
 
-# Next.js
+# Web / Next.js
 .next/
 out/
 
-# Expo / builds
+# Mobile / Expo
 .expo/
+.expo-shared/
 dist/
 
 # .NET
@@ -31,6 +32,7 @@ Thumbs.db
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 
 # IDE
 .vscode/

@@ -1,9 +1,5 @@
-// services/apiClient.js
-// Thay URL phù hợp với môi trường của bạn:
-// - trên Android Emulator (AVD): http://10.0.2.2:5288/api
-// - trên iOS Simulator: http://localhost:5288/api
-// - trên thiết bị thật cùng LAN: http://<MAY_TINH_IP>:5288/api
-const BASE_URL = "http://192.168.1.5:5288/api"; // Đã cập nhật IP chuẩn của máy tính
+const BASE_URL =
+  process.env.EXPO_PUBLIC_API_URL || "http://10.0.2.2:5288/api";
 
 const fetchWithTimeout = async (url, options = {}, timeoutMs = 15000) => {
   const controller = new AbortController();
@@ -21,7 +17,7 @@ const fetchWithTimeout = async (url, options = {}, timeoutMs = 15000) => {
 
 export const apiClient = async (endpoint, options = {}) => {
   const url = `${BASE_URL}${endpoint}`;
-  console.log("API CALL:", url); // Debug log
+  console.log("API CALL:", url);
 
   const defaultHeaders = {
     "Content-Type": "application/json",
