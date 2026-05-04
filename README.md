@@ -19,6 +19,7 @@ Family-Banking/
 - Node.js and npm
 - .NET SDK 10
 - Expo CLI through `npx expo`
+- PostgreSQL
 
 Check local tools:
 
@@ -28,22 +29,78 @@ npm --version
 dotnet --info
 ```
 
+## Environment
+
+Local configuration lives in the root `.env` file.
+
+```powershell
+Copy-Item .\.env.example .\.env
+```
+
+Edit `.env` for your machine. The important values are:
+
+```text
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=2PC
+DB_USER=postgres
+DB_PASSWORD=postgres
+ASPNETCORE_URLS=http://0.0.0.0:5288
+NEXT_PUBLIC_API_URL=http://localhost:5288/api
+EXPO_PUBLIC_API_URL=http://10.0.2.2:5288/api
+```
+
+Use your computer LAN IP for `EXPO_PUBLIC_API_URL` when testing on a physical phone.
+
 ## Backend
 
 ```powershell
 dotnet restore .\2PC.sln
 dotnet build .\2PC.sln
-dotnet run --project .\backend\backend.csproj
+.\scripts\run-backend.ps1
 ```
 
-The API configuration is in `backend/appsettings.json`. Do not commit local secrets or machine-specific settings.
+The backend reads database and 2PC peer settings from `.env`. `backend/appsettings.json` only keeps non-local defaults.
+
+## Database
+
+Seed data is available in `data/2pc.test-data.sql`.
+
+Recommended Docker flow:
+
+```powershell
+docker compose up -d db
+.\scripts\setup-db.ps1
+```
+
+Native PostgreSQL flow:
+
+```powershell
+.\scripts\setup-db.ps1
+```
+
+If `psql` is not in the current terminal PATH, pass the full paths:
+
+```powershell
+.\scripts\setup-db.ps1 `
+  -PsqlPath "C:\Program Files\PostgreSQL\18\bin\psql.exe" `
+  -CreatedbPath "C:\Program Files\PostgreSQL\18\bin\createdb.exe"
+```
+
+Sample login data:
+
+```text
+Phone: 0900000000 / Password: 123456 / Account: 1000000001
+Phone: 0900000001 / Password: 123456 / Account: 1000000002
+Phone: 0900000002 / Password: 123456 / Account: 1000000003
+```
 
 ## Web App
 
 ```powershell
 cd .\apps\web
 npm install
-npm run dev
+..\..\scripts\dev-web.ps1
 npm run build
 ```
 
@@ -54,14 +111,7 @@ The web app contains both admin pages and user banking pages.
 ```powershell
 cd .\apps\mobile
 npm install
-npm run start
-```
-
-The mobile app is an Expo app. Set `EXPO_PUBLIC_API_URL` when the API is not reachable at the default Android emulator URL:
-
-```powershell
-$env:EXPO_PUBLIC_API_URL="http://<MACHINE_IP>:5288/api"
-npm run start
+..\..\scripts\dev-mobile.ps1
 ```
 
 ## Branch Notes

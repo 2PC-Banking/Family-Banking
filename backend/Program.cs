@@ -10,10 +10,27 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpClient("BankB"); // HttpClient để Coordinator gọi Bank B
-builder.WebHost.UseUrls("http://*:5288"); // Cấu hình để chạy trên cổng 5288, bind tất cả IP
+
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    var dbHost = builder.Configuration["DB_HOST"] ?? "localhost";
+    var dbPort = builder.Configuration["DB_PORT"] ?? "5432";
+    var dbName = builder.Configuration["DB_NAME"] ?? "2PC";
+    var dbUser = builder.Configuration["DB_USER"] ?? "postgres";
+    var dbPassword = builder.Configuration["DB_PASSWORD"] ?? "postgres";
+
+    connectionString =
+        $"Host={dbHost};Port={dbPort};Database={dbName};Username={dbUser};Password={dbPassword}";
+}
+
+builder.Configuration["BankB:BaseUrl"] =
+    builder.Configuration["BANKB_BASE_URL"] ?? builder.Configuration["BankB:BaseUrl"];
+builder.Configuration["BankB:MockMode"] =
+    builder.Configuration["BANKB_MOCK_MODE"] ?? builder.Configuration["BankB:MockMode"];
 
 builder.Services.AddDbContext<BankDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(connectionString));
 
 builder.Services.AddCors(options => {
     options.AddPolicy("AllowAll", policy => {

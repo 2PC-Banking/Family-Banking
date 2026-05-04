@@ -20,6 +20,7 @@ appsettings.Development.json
 
 # Environment variables
 .env*
+!.env.example
 
 # macOS
 .DS_Store
