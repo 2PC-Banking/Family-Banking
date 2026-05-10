@@ -21,7 +21,28 @@ const fontFamily = {
   bodyBold: "Inter_700Bold",
 };
 
-export default function SuccessScreen({ onNewTransaction, onHome }) {
+export default function SuccessScreen({ transactionData, onNewTransaction, onHome }) {
+  const response = transactionData?.serverResponse || {};
+  const amount = response.amount ?? transactionData?.Amount ?? 0;
+  const recipientName = transactionData?.RecipientName || "Nguoi nhan";
+  const toAccount = response.toAccount || transactionData?.ToAccount || "---";
+  const destinationBank = response.destinationBank || transactionData?.DestinationBank || "Heritage Digital Bank";
+  const transactionId = response.transactionId || response.transaction_id || transactionData?.ClientTxId || "---";
+  const timestamp = response.timestamp ? new Date(response.timestamp) : new Date();
+  const status = response.status || (transactionData?.IsInterbank2pc ? "PROCESSING" : "COMMITTED");
+  const phase = response.phase || (status === "COMMITTED" ? "DONE" : "PENDING");
+  const decision = response.decision || (status === "COMMITTED" ? "COMMIT" : "WAITING");
+  const isCommitted = status === "COMMITTED" || !transactionData?.IsInterbank2pc;
+  const isAborted = status === "ABORTED";
+  const heroTitle = isAborted ? "Giao dich bi huy" : isCommitted ? "Giao dich thanh cong" : "Giao dich dang xu ly";
+  const participants = Array.isArray(response.participants) ? response.participants : [];
+  const participantSummary = participants.length
+    ? participants.map((p) => `${p.name || p.Name}: ${p.prepareVote || p.PrepareVote || "?"}/${p.decisionAck || p.DecisionAck || "?"}`).join(" | ")
+    : `${phase} / ${decision}`;
+  const formatCurrency = (value) => Number(value || 0).toLocaleString("vi-VN");
+  const formatTime = (value) => value.toLocaleTimeString("vi-VN", { hour12: false });
+  const formatDate = (value) => value.toLocaleDateString("vi-VN");
+
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.root}>
@@ -46,7 +67,7 @@ export default function SuccessScreen({ onNewTransaction, onHome }) {
           <View style={styles.heroSection}>
             <View style={styles.iconCircle}>
               <MaterialIcons
-                name="check-circle"
+                name={isAborted ? "error" : isCommitted ? "check-circle" : "hourglass-top"}
                 size={32}
                 color={colors.onPrimary}
               />
@@ -57,7 +78,7 @@ export default function SuccessScreen({ onNewTransaction, onHome }) {
                 { fontFamily: fontFamily.headlineExtraBold },
               ]}
             >
-              Giao dịch thành công
+              {heroTitle}
             </Text>
             <Text
               style={[
@@ -65,7 +86,7 @@ export default function SuccessScreen({ onNewTransaction, onHome }) {
                 { fontFamily: fontFamily.bodySemiBold },
               ]}
             >
-              Hoàn tất Pha 2 (Commit) • 2PC Protocol
+              {transactionData?.IsInterbank2pc ? `${phase} - ${decision} - 2PC Protocol` : "Chuyen tien noi bo"}
             </Text>
           </View>
 
@@ -104,7 +125,7 @@ export default function SuccessScreen({ onNewTransaction, onHome }) {
                       },
                     ]}
                   >
-                    50,000,000
+                    {formatCurrency(amount)}
                   </Text>
                   <Text
                     style={[
@@ -136,7 +157,7 @@ export default function SuccessScreen({ onNewTransaction, onHome }) {
                       { fontFamily: fontFamily.bodyBold },
                     ]}
                   >
-                    NGUYEN VAN A
+                    {recipientName}
                   </Text>
                   <Text
                     style={[
@@ -144,7 +165,7 @@ export default function SuccessScreen({ onNewTransaction, onHome }) {
                       { fontFamily: fontFamily.bodyRegular },
                     ]}
                   >
-                    STB • 0123 4567 8910
+                    {destinationBank} - {toAccount}
                   </Text>
                 </View>
               </View>
@@ -165,7 +186,7 @@ export default function SuccessScreen({ onNewTransaction, onHome }) {
                       { fontFamily: fontFamily.bodyBold },
                     ]}
                   >
-                    14:35:02
+                    {formatTime(timestamp)}
                   </Text>
                   <Text
                     style={[
@@ -173,7 +194,7 @@ export default function SuccessScreen({ onNewTransaction, onHome }) {
                       { fontFamily: fontFamily.bodyRegular },
                     ]}
                   >
-                    24 Tháng 05, 2024
+                    {formatDate(timestamp)}
                   </Text>
                 </View>
               </View>
@@ -202,7 +223,7 @@ export default function SuccessScreen({ onNewTransaction, onHome }) {
                       { fontFamily: fontFamily.bodyBold },
                     ]}
                   >
-                    TXN-9982-A2F0-PH2
+                    {transactionId}
                   </Text>
                   <TouchableOpacity activeOpacity={0.6}>
                     <MaterialIcons
@@ -213,6 +234,35 @@ export default function SuccessScreen({ onNewTransaction, onHome }) {
                   </TouchableOpacity>
                 </View>
               </View>
+              {transactionData?.IsInterbank2pc && (
+                <View style={styles.infoRow}>
+                  <View style={styles.infoIconBox}>
+                    <MaterialIcons
+                      name="account-tree"
+                      size={24}
+                      color={colors.primary}
+                    />
+                  </View>
+                  <View style={styles.infoTextCol}>
+                    <Text
+                      style={[
+                        styles.infoValue,
+                        { fontFamily: fontFamily.bodyBold },
+                      ]}
+                    >
+                      {status} / {phase} / {decision}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.infoLabel,
+                        { fontFamily: fontFamily.bodyRegular },
+                      ]}
+                    >
+                      {participantSummary}
+                    </Text>
+                  </View>
+                </View>
+              )}
             </View>
           </View>
 
@@ -411,6 +461,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.secondaryContainer,
     alignItems: "center",
     justifyContent: "center",
+  },
+  infoTextCol: {
+    flex: 1,
   },
   infoValue: {
     fontSize: 14, // text-sm

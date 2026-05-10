@@ -119,3 +119,12 @@ npm install
 - `develop` is the active integration branch.
 - `main` should be updated only when preparing a stable release.
 - `feature/frontend-auth-api` is intentionally left aside for later review because it conflicts with the current admin login flow.
+
+
+cd E:\Workspace\FamilyBank\Family-Banking\apps\mobile                                             
+>> $env:EXPO_PUBLIC_API_URL="http://192.168.1.15:5288/api"
+>> npm run start -- --clear        
+
+cd E:\Workspace\FamilyBank\Family-Banking
+>> $env:ASPNETCORE_URLS="http://0.0.0.0:5288"             
+>> dotnet run --project backend\backend.csproj --no-launch-profile     

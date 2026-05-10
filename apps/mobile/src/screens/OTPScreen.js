@@ -14,7 +14,7 @@ import { colors } from "../theme/colors";
 import { useEffect } from "react"; // Nhớ import useEffect ở trên cùng
 
 // Import API chuyển tiền
-import { transferAPI } from "../services/apiService";
+import { interbankTransfer2pcAPI, transferAPI } from "../services/apiService";
 
 const fontFamily = {
   headlineExtraBold: "Manrope_800ExtraBold",
@@ -86,13 +86,23 @@ export default function OTPScreen({ onBack, onConfirm, transferData }) {
     try {
       const otpString = otp.join("");
 
-      const response = await transferAPI(
-        transferData.FromAccount,
-        transferData.ToAccount,
-        transferData.Amount,
-        otpString,
-        transferData.Note || "Chuyen tien",
-      );
+      const response = transferData.IsInterbank2pc
+        ? await interbankTransfer2pcAPI({
+            FromAccount: transferData.FromAccount,
+            ToAccount: transferData.ToAccount,
+            Amount: transferData.Amount,
+            OtpCode: otpString,
+            Note: transferData.Note || "Chuyen tien",
+            DestinationBank: transferData.DestinationBank,
+            ClientTxId: transferData.ClientTxId,
+          })
+        : await transferAPI(
+            transferData.FromAccount,
+            transferData.ToAccount,
+            transferData.Amount,
+            otpString,
+            transferData.Note || "Chuyen tien",
+          );
 
       if (onConfirm) {
         onConfirm({ ...transferData, serverResponse: response });

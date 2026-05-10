@@ -12,3 +12,29 @@ export const requestOtpAPI = (accountNumber) =>
 // SỬA LẠI API TRANSFER (Thêm OtpCode):
 export const transferAPI = (FromAccount, ToAccount, Amount, OtpCode, Note) => 
   apiClient('/transfer', { method: 'POST', body: JSON.stringify({ FromAccount, ToAccount, Amount, OtpCode, Note }) });
+
+export const interbankTransfer2pcAPI = ({
+  FromAccount,
+  ToAccount,
+  Amount,
+  OtpCode,
+  Note,
+  DestinationBank,
+  ClientTxId,
+}) =>
+  apiClient('/interbank/transfer-2pc', {
+    method: 'POST',
+    body: JSON.stringify({
+      FromAccount,
+      ToAccount,
+      Amount,
+      OtpCode,
+      Note,
+      DestinationBank,
+      ClientTxId,
+    }),
+    timeout: 25000,
+  });
+
+export const getInterbankTransferStatusAPI = (transactionId) =>
+  apiClient(`/interbank/transfer-2pc/${transactionId}`, { timeout: 15000 });

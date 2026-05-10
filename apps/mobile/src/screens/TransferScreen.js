@@ -19,6 +19,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 // Import API (Bổ sung thêm requestOtpAPI)
 import { getBalanceAPI, getAccountInfoAPI, requestOtpAPI } from "../services/apiService"; 
 
+const SIMPLE_SERENE_BANK = "Simple Serene Bank (2PC Demo)";
+
 const fontFamily = {
   headlineExtraBold: "Manrope_800ExtraBold",
   headlineBold: "Manrope_700Bold",
@@ -31,6 +33,7 @@ const fontFamily = {
 
 const BANKS = [
   "Heritage Digital Bank (Nội bộ)",
+  SIMPLE_SERENE_BANK,
   "Vietcombank - NHTMCP Ngoại Thương VN",
   "Techcombank - NHTMCP Kỹ Thương VN",
   "MBBank - NHTMCP Quân Đội",
@@ -40,6 +43,7 @@ const BANKS = [
 export default function TransferScreen({ onBack, onConfirm }) {
   const [bank, setBank] = useState(BANKS[0]);
   const [isBankModalVisible, setBankModalVisible] = useState(false); 
+  const isInterbank2pc = bank === SIMPLE_SERENE_BANK;
 
   const [accountNo, setAccountNo] = useState("");
   const [recipientName, setRecipientName] = useState(""); 
@@ -71,15 +75,17 @@ export default function TransferScreen({ onBack, onConfirm }) {
     const fetchRecipientName = async () => {
       if (accountNo.length >= 5) {
         setIsFetchingName(true);
-        if (bank === "Heritage Digital Bank (Nội bộ)") {
+        if (bank === BANKS[0]) {
           try {
             const res = await getAccountInfoAPI(accountNo);
             setRecipientName(res.customerName);
           } catch (error) {
             setRecipientName("KHÔNG TÌM THẤY TÀI KHOẢN");
           }
+        } else if (bank === SIMPLE_SERENE_BANK) {
+          setRecipientName("Simple Serene Bank account");
         } else {
-          setRecipientName("NGUYEN VAN A (Liên ngân hàng)");
+          setRecipientName("NGAN HANG CHUA HO TRO 2PC");
         }
         setIsFetchingName(false);
       } else {
@@ -115,6 +121,10 @@ export default function TransferScreen({ onBack, onConfirm }) {
       Alert.alert("Lỗi", "Số dư không đủ để thực hiện giao dịch.");
       return;
     }
+    if (bank !== BANKS[0] && bank !== SIMPLE_SERENE_BANK) {
+      Alert.alert("Chua ho tro", "Demo 2PC hien chi ho tro Simple Serene Bank.");
+      return;
+    }
 
     // GỌI API YÊU CẦU GỬI OTP TRƯỚC KHI CHUYỂN TRANG
     setIsLoading(true);
@@ -126,6 +136,9 @@ export default function TransferScreen({ onBack, onConfirm }) {
           ToAccount: accountNo,
           Amount: numericAmount,
           Note: note,
+          DestinationBank: bank,
+          IsInterbank2pc: isInterbank2pc,
+          ClientTxId: `MOB-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`,
           RecipientName: recipientName, 
         };
         
@@ -186,7 +199,7 @@ export default function TransferScreen({ onBack, onConfirm }) {
                   <Text style={[styles.inputLabel, { fontFamily: fontFamily.bodyBold }]}>Số tài khoản</Text>
                   <View style={[styles.inputWrapper, { borderBottomColor: accountNo ? colors.primary : colors.outlineVariant }]}>
                     <MaterialIcons name="dialpad" size={18} color={accountNo ? "#003063" : colors.outline} style={styles.inputIcon} />
-                    <TextInput style={[styles.textInput, { fontFamily: fontFamily.headlineBold }]} placeholder="Nhập số tài khoản" placeholderTextColor="rgba(115, 119, 130, 0.4)" value={accountNo} onChangeText={setAccountNo} keyboardType="numeric" />
+                    <TextInput style={[styles.textInput, { fontFamily: fontFamily.headlineBold }]} placeholder="Nhập số tài khoản" placeholderTextColor="rgba(115, 119, 130, 0.4)" value={accountNo} onChangeText={setAccountNo} keyboardType={isInterbank2pc ? "default" : "numeric"} autoCapitalize="characters" />
                   </View>
                 </View>
 
