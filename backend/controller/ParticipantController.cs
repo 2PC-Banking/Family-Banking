@@ -177,11 +177,56 @@ namespace backend.controller
             if (journal.phase_status == "ABORTED")
                 return Ok(new DecisionResponse(req.transaction_id, "ABORTED", "Already aborted (idempotent)"));
 
-            // Không thể rollback khi đã COMMITTED
+            // Đã COMMITTED → Coordinator force rollback sau timeout Phase 2
+            // Cần tạo COMPENSATING TRANSACTION để hoàn tiền
             if (journal.phase_status == "COMMITTED")
-                return Conflict(new ErrorResponse("CONFLICT", "Cannot rollback a committed transaction", req.transaction_id));
+            {
+                using var dbTx = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    var account = await _context.Accounts
+                        .FirstOrDefaultAsync(a => a.accountnumber == journal.account_id);
 
-            // Release lock (chưa apply tiền thật nên chỉ cần update trạng thái)
+                    if (account == null)
+                        return NotFound(new ErrorResponse("NOT_FOUND", "Account not found during compensating rollback", req.transaction_id));
+
+                    // Đảo ngược nghiệp vụ: DEBIT → cộng lại, CREDIT → trừ lại
+                    if (journal.operation == "DEBIT")
+                        account.balance += journal.amount;  // Hoàn tiền đã bị trừ
+                    else
+                        account.balance -= journal.amount;  // Rút tiền đã được cộng nhầm
+
+                    // Ghi compensating transaction vào lịch sử
+                    var compensateTx = new Transaction
+                    {
+                        transactionid = req.transaction_id + "_COMPENSATE",
+                        accountnumber = journal.account_id,
+                        amount = journal.operation == "DEBIT" ? journal.amount : -journal.amount,
+                        timestamp = DateTime.UtcNow,
+                        type = "2PC_COMPENSATE",
+                        relatedaccount = null,
+                        postbalance = account.balance
+                    };
+                    await _context.Transactions.AddAsync(compensateTx);
+
+                    // Đánh dấu journal là ABORTED (đã compensate)
+                    journal.phase_status = "ABORTED";
+                    journal.last_error = "Compensating rollback: Coordinator forced ROLLBACK after Phase 2 timeout";
+                    journal.updated_at = DateTime.UtcNow;
+
+                    await _context.SaveChangesAsync();
+                    await dbTx.CommitAsync();
+
+                    return Ok(new DecisionResponse(req.transaction_id, "ABORTED", "Compensating rollback applied: balance reversed"));
+                }
+                catch (Exception ex)
+                {
+                    await dbTx.RollbackAsync();
+                    return StatusCode(500, new ErrorResponse("SYSTEM_ERROR", ex.Message, req.transaction_id));
+                }
+            }
+
+            // Trạng thái PREPARED hoặc INIT → release lock (chưa apply tiền thật)
             journal.phase_status = "ABORTED";
             journal.updated_at = DateTime.UtcNow;
             await _context.SaveChangesAsync();

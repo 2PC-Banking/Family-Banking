@@ -122,7 +122,7 @@ npm install
 
 
 cd E:\Workspace\FamilyBank\Family-Banking\apps\mobile                                             
->> $env:EXPO_PUBLIC_API_URL="http://192.168.1.15:5288/api"
+>> $env:EXPO_PUBLIC_API_URL="http://192.168.43.73:5288/api"
 >> npm run start -- --clear        
 
 cd E:\Workspace\FamilyBank\Family-Banking
